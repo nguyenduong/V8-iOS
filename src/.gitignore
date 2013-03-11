@@ -9,9 +9,9 @@
 *.scons*
 *.suo
 *.user
-*.xcodeproj
 *.idb
 *.pdb
+*.xcuserdatad
 #*#
 *~
 .cpplint-cache

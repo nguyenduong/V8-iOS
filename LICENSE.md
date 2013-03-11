@@ -28,7 +28,7 @@ These libraries have their own licenses; we recommend you read them,
 as their terms may differ from the terms below.
 
 Copyright 2006-2009, Google Inc. 
-Copyright 2013 Thai-Duong Nguyen
+Copyright 2013 Thai-Duong Nguyen - www.jacos2d-x.org
 
 All rights reserved.
 Redistribution and use in source and binary forms, with or without

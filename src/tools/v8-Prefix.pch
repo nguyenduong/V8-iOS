@@ -1,0 +1,14 @@
+
+#ifdef __OBJC__
+#import <Foundation/Foundation.h>
+#endif
+
+#import <TargetConditionals.h>
+
+#if TARGET_IPHONE_SIMULATOR
+
+#define BUILD_FOR_IOS_SIMULATOR 1
+
+#endif
+
+#define __TARGET_IOS

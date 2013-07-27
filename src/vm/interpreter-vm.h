@@ -158,14 +158,16 @@ public:
 		ip = mCode + entry;
 	};
 	void* execute_code(unsigned char *code, unsigned char* entry, void* function, void* receiver, int argc, void*** args);
-	int execute_regexp_code(void* matcher_func,
+    int execute_regexp_code(void* matcher_func,
                           void* input,
                           int start_offset,
 						  void* input_start,
                           void* input_end,
                           void* output,
+						  int	output_size,
                           void* stack_base,						  
-                          int direct_call);
+                          int direct_call,
+						  void* isolate);
 	
 protected:
 	void pushCallStack();

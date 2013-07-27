@@ -1,4 +1,4 @@
-// Copyright 2006-2009 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -60,6 +60,52 @@ const int kDebugRegisterBits = 4;
 const int kDebugIdShift = kDebugRegisterBits;
 
 
+// ExternalReferenceTable is a helper class that defines the relationship
+// between external references and their encodings. It is used to build
+// hashmaps in ExternalReferenceEncoder and ExternalReferenceDecoder.
+class ExternalReferenceTable {
+ public:
+  static ExternalReferenceTable* instance(Isolate* isolate);
+
+  ~ExternalReferenceTable() { }
+
+  int size() const { return refs_.length(); }
+
+  Address address(int i) { return refs_[i].address; }
+
+  uint32_t code(int i) { return refs_[i].code; }
+
+  const char* name(int i) { return refs_[i].name; }
+
+  int max_id(int code) { return max_id_[code]; }
+
+ private:
+  explicit ExternalReferenceTable(Isolate* isolate) : refs_(64) {
+      PopulateTable(isolate);
+  }
+
+  struct ExternalReferenceEntry {
+    Address address;
+    uint32_t code;
+    const char* name;
+  };
+
+  void PopulateTable(Isolate* isolate);
+
+  // For a few types of references, we can get their address from their id.
+  void AddFromId(TypeCode type,
+                 uint16_t id,
+                 const char* name,
+                 Isolate* isolate);
+
+  // For other types of references, the caller will figure out the address.
+  void Add(Address address, TypeCode type, uint16_t id, const char* name);
+
+  List<ExternalReferenceEntry> refs_;
+  int max_id_[kTypeCodeCount];
+};
+
+
 class ExternalReferenceEncoder {
  public:
   ExternalReferenceEncoder();
@@ -79,6 +125,8 @@ class ExternalReferenceEncoder {
   static bool Match(void* key1, void* key2) { return key1 == key2; }
 
   void Put(Address key, int index);
+
+  Isolate* isolate_;
 };
 
 
@@ -105,6 +153,8 @@ class ExternalReferenceDecoder {
   void Put(uint32_t key, Address value) {
     *Lookup(key) = value;
   }
+
+  Isolate* isolate_;
 };
 
 
@@ -120,13 +170,27 @@ class SnapshotByteSource {
     return data_[position_++];
   }
 
+  int32_t GetUnalignedInt() {
+#if defined(V8_HOST_CAN_READ_UNALIGNED) &&  __BYTE_ORDER == __LITTLE_ENDIAN
+    int32_t answer;
+    ASSERT(position_ + sizeof(answer) <= length_ + 0u);
+    answer = *reinterpret_cast<const int32_t*>(data_ + position_);
+#else
+    int32_t answer = data_[position_];
+    answer |= data_[position_ + 1] << 8;
+    answer |= data_[position_ + 2] << 16;
+    answer |= data_[position_ + 3] << 24;
+#endif
+    return answer;
+  }
+
+  void Advance(int by) { position_ += by; }
+
   inline void CopyRaw(byte* to, int number_of_bytes);
 
   inline int GetInt();
 
-  bool AtEOF() {
-    return position_ == length_;
-  }
+  bool AtEOF();
 
   int position() { return position_; }
 
@@ -137,65 +201,31 @@ class SnapshotByteSource {
 };
 
 
-// It is very common to have a reference to objects at certain offsets in the
-// heap.  These offsets have been determined experimentally.  We code
-// references to such objects in a single byte that encodes the way the pointer
-// is written (only plain pointers allowed), the space number and the offset.
-// This only works for objects in the first page of a space.  Don't use this for
-// things in newspace since it bypasses the write barrier.
-
-static const int k64 = (sizeof(uintptr_t) - 4) / 4;
-
-#define COMMON_REFERENCE_PATTERNS(f)                               \
-  f(kNumberOfSpaces, 2, (11 - k64))                                \
-  f((kNumberOfSpaces + 1), 2, 0)                                   \
-  f((kNumberOfSpaces + 2), 2, (142 - 16 * k64))                    \
-  f((kNumberOfSpaces + 3), 2, (74 - 15 * k64))                     \
-  f((kNumberOfSpaces + 4), 2, 5)                                   \
-  f((kNumberOfSpaces + 5), 1, 135)                                 \
-  f((kNumberOfSpaces + 6), 2, (228 - 39 * k64))
-
-#define COMMON_RAW_LENGTHS(f)        \
-  f(1, 1)  \
-  f(2, 2)  \
-  f(3, 3)  \
-  f(4, 4)  \
-  f(5, 5)  \
-  f(6, 6)  \
-  f(7, 7)  \
-  f(8, 8)  \
-  f(9, 12)  \
-  f(10, 16) \
-  f(11, 20) \
-  f(12, 24) \
-  f(13, 28) \
-  f(14, 32) \
-  f(15, 36)
-
 // The Serializer/Deserializer class is a common superclass for Serializer and
 // Deserializer which is used to store common constants and methods used by
 // both.
 class SerializerDeserializer: public ObjectVisitor {
  public:
   static void Iterate(ObjectVisitor* visitor);
-  static void SetSnapshotCacheSize(int size);
+
+  static int nop() { return kNop; }
 
  protected:
   // Where the pointed-to object can be found:
   enum Where {
     kNewObject = 0,                 // Object is next in snapshot.
-    // 1-8                             One per space.
+    // 1-6                             One per space.
     kRootArray = 0x9,               // Object is found in root array.
     kPartialSnapshotCache = 0xa,    // Object is in the cache.
     kExternalReference = 0xb,       // Pointer to an external reference.
-    // 0xc-0xf                         Free.
-    kBackref = 0x10,                 // Object is described relative to end.
-    // 0x11-0x18                       One per space.
-    // 0x19-0x1f                       Common backref offsets.
-    kFromStart = 0x20,              // Object is described relative to start.
-    // 0x21-0x28                       One per space.
-    // 0x29-0x2f                       Free.
-    // 0x30-0x3f                       Used by misc tags below.
+    kSkip = 0xc,                    // Skip n bytes.
+    kNop = 0xd,                     // Does nothing, used to pad.
+    // 0xe-0xf                         Free.
+    kBackref = 0x10,                // Object is described relative to end.
+    // 0x11-0x16                       One per space.
+    kBackrefWithSkip = 0x18,        // Object is described relative to end.
+    // 0x19-0x1e                       One per space.
+    // 0x20-0x3f                       Used by misc. tags below.
     kPointedToMask = 0x3f
   };
 
@@ -207,17 +237,27 @@ class SerializerDeserializer: public ObjectVisitor {
     kHowToCodeMask = 0x40
   };
 
+  // For kRootArrayConstants
+  enum WithSkip {
+    kNoSkipDistance = 0,
+    kHasSkipDistance = 0x40,
+    kWithSkipMask = 0x40
+  };
+
   // Where to point within the object.
   enum WhereToPoint {
     kStartOfObject = 0,
-    kFirstInstruction = 0x80,
+    kInnerPointer = 0x80,  // First insn in code object or payload of cell.
     kWhereToPointMask = 0x80
   };
 
   // Misc.
-  // Raw data to be copied from the snapshot.
-  static const int kRawData = 0x30;
-  // Some common raw lengths: 0x31-0x3f
+  // Raw data to be copied from the snapshot.  This byte code does not advance
+  // the current pointer, which is used for code objects, where we write the
+  // entire code in one memcpy, then fix up stuff with kSkip and other byte
+  // codes that overwrite data.
+  static const int kRawData = 0x20;
+  // Some common raw lengths: 0x21-0x3f.  These autoadvance the current pointer.
   // A tag emitted at strategic points in the snapshot to delineate sections.
   // If the deserializer does not find these at the expected moments then it
   // is an indication that the snapshot and the VM do not fit together.
@@ -227,48 +267,44 @@ class SerializerDeserializer: public ObjectVisitor {
   // Used for the source code of the natives, which is in the executable, but
   // is referred to from external strings in the snapshot.
   static const int kNativesStringResource = 0x71;
-  static const int kNewPage = 0x72;
-  // 0x73-0x7f                            Free.
-  // 0xb0-0xbf                            Free.
-  // 0xf0-0xff                            Free.
+  static const int kRepeat = 0x72;
+  static const int kConstantRepeat = 0x73;
+  // 0x73-0x7f            Repeat last word (subtract 0x72 to get the count).
+  static const int kMaxRepeats = 0x7f - 0x72;
+  static int CodeForRepeats(int repeats) {
+    ASSERT(repeats >= 1 && repeats <= kMaxRepeats);
+    return 0x72 + repeats;
+  }
+  static int RepeatsForCode(int byte_code) {
+    ASSERT(byte_code >= kConstantRepeat && byte_code <= 0x7f);
+    return byte_code - 0x72;
+  }
+  static const int kRootArrayConstants = 0xa0;
+  // 0xa0-0xbf            Things from the first 32 elements of the root array.
+  static const int kRootArrayNumberOfConstantEncodings = 0x20;
+  static int RootArrayConstantFromByteCode(int byte_code) {
+    return byte_code & 0x1f;
+  }
 
-
-  static const int kLargeData = LAST_SPACE;
-  static const int kLargeCode = kLargeData + 1;
-  static const int kLargeFixedArray = kLargeCode + 1;
-  static const int kNumberOfSpaces = kLargeFixedArray + 1;
+  static const int kNumberOfSpaces = LO_SPACE;
   static const int kAnyOldSpace = -1;
 
   // A bitmask for getting the space out of an instruction.
-  static const int kSpaceMask = 15;
-
-  static inline bool SpaceIsLarge(int space) { return space >= kLargeData; }
-  static inline bool SpaceIsPaged(int space) {
-    return space >= FIRST_PAGED_SPACE && space <= LAST_PAGED_SPACE;
-  }
-
-  static int partial_snapshot_cache_length_;
-  static const int kPartialSnapshotCacheCapacity = 1300;
-  static Object* partial_snapshot_cache_[];
+  static const int kSpaceMask = 7;
 };
 
 
 int SnapshotByteSource::GetInt() {
-  // A little unwind to catch the really small ints.
-  int snapshot_byte = Get();
-  if ((snapshot_byte & 0x80) == 0) {
-    return snapshot_byte;
-  }
-  int accumulator = (snapshot_byte & 0x7f) << 7;
-  while (true) {
-    snapshot_byte = Get();
-    if ((snapshot_byte & 0x80) == 0) {
-      return accumulator | snapshot_byte;
-    }
-    accumulator = (accumulator | (snapshot_byte & 0x7f)) << 7;
-  }
-  UNREACHABLE();
-  return accumulator;
+  // This way of variable-length encoding integers does not suffer from branch
+  // mispredictions.
+  uint32_t answer = GetUnalignedInt();
+  int bytes = answer & 3;
+  Advance(bytes);
+  uint32_t mask = 0xffffffffu;
+  mask >>= 32 - (bytes << 3);
+  answer &= mask;
+  answer >>= 2;
+  return answer;
 }
 
 
@@ -292,9 +328,11 @@ class Deserializer: public SerializerDeserializer {
   // Deserialize a single object and the objects reachable from it.
   void DeserializePartial(Object** root);
 
-#ifdef DEBUG
-  virtual void Synchronize(const char* tag);
-#endif
+  void set_reservation(int space_number, int reservation) {
+    ASSERT(space_number >= 0);
+    ASSERT(space_number <= LAST_SPACE);
+    reservations_[space_number] = reservation;
+  }
 
  private:
   virtual void VisitPointers(Object** start, Object** end);
@@ -307,27 +345,45 @@ class Deserializer: public SerializerDeserializer {
     UNREACHABLE();
   }
 
-  void ReadChunk(Object** start, Object** end, int space, Address address);
-  HeapObject* GetAddressFromStart(int space);
-  inline HeapObject* GetAddressFromEnd(int space);
-  Address Allocate(int space_number, Space* space, int size);
-  void ReadObject(int space_number, Space* space, Object** write_back);
+  // Fills in some heap data in an area from start to end (non-inclusive).  The
+  // space id is used for the write barrier.  The object_address is the address
+  // of the object we are writing into, or NULL if we are not writing into an
+  // object, i.e. if we are writing a series of tagged values that are not on
+  // the heap.
+  void ReadChunk(
+      Object** start, Object** end, int space, Address object_address);
+  void ReadObject(int space_number, Object** write_back);
 
-  // Keep track of the pages in the paged spaces.
-  // (In large object space we are keeping track of individual objects
-  // rather than pages.)  In new space we just need the address of the
-  // first object and the others will flow from that.
-  List<Address> pages_[SerializerDeserializer::kNumberOfSpaces];
+  // This routine both allocates a new object, and also keeps
+  // track of where objects have been allocated so that we can
+  // fix back references when deserializing.
+  Address Allocate(int space_index, int size) {
+    Address address = high_water_[space_index];
+    high_water_[space_index] = address + size;
+    return address;
+  }
+
+  // This returns the address of an object that has been described in the
+  // snapshot as being offset bytes back in a particular space.
+  HeapObject* GetAddressFromEnd(int space) {
+    int offset = source_->GetInt();
+    offset <<= kObjectAlignmentBits;
+    return HeapObject::FromAddress(high_water_[space] - offset);
+  }
+
+
+  // Cached current isolate.
+  Isolate* isolate_;
 
   SnapshotByteSource* source_;
-  static ExternalReferenceDecoder* external_reference_decoder_;
   // This is the address of the next object that will be allocated in each
   // space.  It is used to calculate the addresses of back-references.
   Address high_water_[LAST_SPACE + 1];
-  // This is the address of the most recent object that was allocated.  It
-  // is used to set the location of the new page when we encounter a
-  // START_NEW_PAGE_SERIALIZATION tag.
-  Address last_object_address_;
+
+  int reservations_[LAST_SPACE + 1];
+  static const intptr_t kUninitializedReservation = -1;
+
+  ExternalReferenceDecoder* external_reference_decoder_;
 
   DISALLOW_COPY_AND_ASSIGN(Deserializer);
 };
@@ -398,6 +454,7 @@ class SerializationAddressMapper {
 };
 
 
+// There can be only one serializer per V8 process.
 class Serializer : public SerializerDeserializer {
  public:
   explicit Serializer(SnapshotByteSink* sink);
@@ -406,7 +463,7 @@ class Serializer : public SerializerDeserializer {
   // You can call this after serialization to find out how much space was used
   // in each space.
   int CurrentAllocationAddress(int space) {
-    if (SpaceIsLarge(space)) return large_object_total_;
+    ASSERT(space < kNumberOfSpaces);
     return fullness_[space];
   }
 
@@ -423,14 +480,22 @@ class Serializer : public SerializerDeserializer {
   static void TooLateToEnableNow() { too_late_to_enable_now_ = true; }
   static bool enabled() { return serialization_enabled_; }
   SerializationAddressMapper* address_mapper() { return &address_mapper_; }
-#ifdef DEBUG
-  virtual void Synchronize(const char* tag);
-#endif
+  void PutRoot(int index,
+               HeapObject* object,
+               HowToCode how,
+               WhereToPoint where,
+               int skip);
 
  protected:
   static const int kInvalidRootIndex = -1;
-  virtual int RootIndex(HeapObject* heap_object) = 0;
+
+  int RootIndex(HeapObject* heap_object, HowToCode from);
   virtual bool ShouldBeInThePartialSnapshotCache(HeapObject* o) = 0;
+  intptr_t root_index_wave_front() { return root_index_wave_front_; }
+  void set_root_index_wave_front(intptr_t value) {
+    ASSERT(value >= root_index_wave_front_);
+    root_index_wave_front_ = value;
+  }
 
   class ObjectSerializer : public ObjectVisitor {
    public:
@@ -443,11 +508,17 @@ class Serializer : public SerializerDeserializer {
         object_(HeapObject::cast(o)),
         sink_(sink),
         reference_representation_(how_to_code + where_to_point),
-        bytes_processed_so_far_(0) { }
+        bytes_processed_so_far_(0),
+        code_object_(o->IsCode()),
+        code_has_been_output_(false) { }
     void Serialize();
     void VisitPointers(Object** start, Object** end);
+    void VisitEmbeddedPointer(RelocInfo* target);
     void VisitExternalReferences(Address* start, Address* end);
+    void VisitExternalReference(RelocInfo* rinfo);
     void VisitCodeTarget(RelocInfo* target);
+    void VisitCodeEntry(Address entry_address);
+    void VisitGlobalPropertyCell(RelocInfo* rinfo);
     void VisitRuntimeEntry(RelocInfo* reloc);
     // Used for seralizing the external strings that hold the natives source.
     void VisitExternalAsciiString(
@@ -459,42 +530,45 @@ class Serializer : public SerializerDeserializer {
     }
 
    private:
-    void OutputRawData(Address up_to);
+    enum ReturnSkip { kCanReturnSkipInsteadOfSkipping, kIgnoringReturn };
+    // This function outputs or skips the raw data between the last pointer and
+    // up to the current position.  It optionally can just return the number of
+    // bytes to skip instead of performing a skip instruction, in case the skip
+    // can be merged into the next instruction.
+    int OutputRawData(Address up_to, ReturnSkip return_skip = kIgnoringReturn);
 
     Serializer* serializer_;
     HeapObject* object_;
     SnapshotByteSink* sink_;
     int reference_representation_;
     int bytes_processed_so_far_;
+    bool code_object_;
+    bool code_has_been_output_;
   };
 
   virtual void SerializeObject(Object* o,
                                HowToCode how_to_code,
-                               WhereToPoint where_to_point) = 0;
+                               WhereToPoint where_to_point,
+                               int skip) = 0;
   void SerializeReferenceToPreviousObject(
       int space,
       int address,
       HowToCode how_to_code,
-      WhereToPoint where_to_point);
+      WhereToPoint where_to_point,
+      int skip);
   void InitializeAllocators();
-  // This will return the space for an object.  If the object is in large
-  // object space it may return kLargeCode or kLargeFixedArray in order
-  // to indicate to the deserializer what kind of large object allocation
-  // to make.
+  // This will return the space for an object.
   static int SpaceOfObject(HeapObject* object);
-  // This just returns the space of the object.  It will return LO_SPACE
-  // for all large objects since you can't check the type of the object
-  // once the map has been used for the serialization address.
-  static int SpaceOfAlreadySerializedObject(HeapObject* object);
-  int Allocate(int space, int size, bool* new_page_started);
+  int Allocate(int space, int size);
   int EncodeExternalReference(Address addr) {
     return external_reference_encoder_->Encode(addr);
   }
 
+  int SpaceAreaSize(int space);
+
+  Isolate* isolate_;
   // Keep track of the fullness of each space in order to generate
-  // relative addresses for back references.  Large objects are
-  // just numbered sequentially since relative addresses make no
-  // sense in large object space.
+  // relative addresses for back references.
   int fullness_[LAST_SPACE + 1];
   SnapshotByteSink* sink_;
   int current_root_index_;
@@ -502,12 +576,14 @@ class Serializer : public SerializerDeserializer {
   static bool serialization_enabled_;
   // Did we already make use of the fact that serialization was not enabled?
   static bool too_late_to_enable_now_;
-  int large_object_total_;
   SerializationAddressMapper address_mapper_;
+  intptr_t root_index_wave_front_;
+  void Pad();
 
   friend class ObjectSerializer;
   friend class Deserializer;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(Serializer);
 };
 
@@ -518,16 +594,17 @@ class PartialSerializer : public Serializer {
                     SnapshotByteSink* sink)
     : Serializer(sink),
       startup_serializer_(startup_snapshot_serializer) {
+    set_root_index_wave_front(Heap::kStrongRootListLength);
   }
 
   // Serialize the objects reachable from a single object pointer.
   virtual void Serialize(Object** o);
   virtual void SerializeObject(Object* o,
                                HowToCode how_to_code,
-                               WhereToPoint where_to_point);
+                               WhereToPoint where_to_point,
+                               int skip);
 
  protected:
-  virtual int RootIndex(HeapObject* o);
   virtual int PartialSnapshotCacheIndex(HeapObject* o);
   virtual bool ShouldBeInThePartialSnapshotCache(HeapObject* o) {
     // Scripts should be referred only through shared function infos.  We can't
@@ -536,7 +613,9 @@ class PartialSerializer : public Serializer {
     // would cause dupes.
     ASSERT(!o->IsScript());
     return o->IsString() || o->IsSharedFunctionInfo() ||
-           o->IsHeapNumber() || o->IsCode();
+           o->IsHeapNumber() || o->IsCode() ||
+           o->IsScopeInfo() ||
+           o->map() == HEAP->fixed_cow_array_map();
   }
 
  private:
@@ -550,26 +629,27 @@ class StartupSerializer : public Serializer {
   explicit StartupSerializer(SnapshotByteSink* sink) : Serializer(sink) {
     // Clear the cache of objects used by the partial snapshot.  After the
     // strong roots have been serialized we can create a partial snapshot
-    // which will repopulate the cache with objects neede by that partial
+    // which will repopulate the cache with objects needed by that partial
     // snapshot.
-    partial_snapshot_cache_length_ = 0;
+    Isolate::Current()->set_serialize_partial_snapshot_cache_length(0);
   }
   // Serialize the current state of the heap.  The order is:
   // 1) Strong references.
   // 2) Partial snapshot cache.
-  // 3) Weak references (eg the symbol table).
+  // 3) Weak references (e.g. the symbol table).
   virtual void SerializeStrongReferences();
   virtual void SerializeObject(Object* o,
                                HowToCode how_to_code,
-                               WhereToPoint where_to_point);
+                               WhereToPoint where_to_point,
+                               int skip);
   void SerializeWeakReferences();
   void Serialize() {
     SerializeStrongReferences();
     SerializeWeakReferences();
+    Pad();
   }
 
  private:
-  virtual int RootIndex(HeapObject* o) { return kInvalidRootIndex; }
   virtual bool ShouldBeInThePartialSnapshotCache(HeapObject* o) {
     return false;
   }

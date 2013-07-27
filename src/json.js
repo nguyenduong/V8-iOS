@@ -27,12 +27,6 @@
 
 var $JSON = global.JSON;
 
-function ParseJSONUnfiltered(text) {
-  var s = $String(text);
-  var f = %CompileString(text, true);
-  return f();
-}
-
 function Revive(holder, name, reviver) {
   var val = holder[name];
   if (IS_OBJECT(val)) {
@@ -44,7 +38,7 @@ function Revive(holder, name, reviver) {
       }
     } else {
       for (var p in val) {
-        if (ObjectHasOwnProperty.call(val, p)) {
+        if (%_CallFunction(val, p, ObjectHasOwnProperty)) {
           var newElement = Revive(val, p, reviver);
           if (IS_UNDEFINED(newElement)) {
             delete val[p];
@@ -55,68 +49,25 @@ function Revive(holder, name, reviver) {
       }
     }
   }
-  return reviver.call(holder, name, val);
+  return %_CallFunction(holder, name, val, reviver);
 }
 
 function JSONParse(text, reviver) {
-  var unfiltered = ParseJSONUnfiltered(text);
-  if (IS_FUNCTION(reviver)) {
+  var unfiltered = %ParseJson(TO_STRING_INLINE(text));
+  if (IS_SPEC_FUNCTION(reviver)) {
     return Revive({'': unfiltered}, '', reviver);
   } else {
     return unfiltered;
   }
 }
 
-var characterQuoteCache = {
-  '\"': '\\"',
-  '\\': '\\\\',
-  '/': '\\/',
-  '\b': '\\b',
-  '\f': '\\f',
-  '\n': '\\n',
-  '\r': '\\r',
-  '\t': '\\t',
-  '\x0B': '\\u000b'
-};
-
-function QuoteSingleJSONCharacter(c) {
-  if (c in characterQuoteCache) {
-    return characterQuoteCache[c];
-  }
-  var charCode = c.charCodeAt(0);
-  var result;
-  if (charCode < 16) result = '\\u000';
-  else if (charCode < 256) result = '\\u00';
-  else if (charCode < 4096) result = '\\u0';
-  else result = '\\u';
-  result += charCode.toString(16);
-  characterQuoteCache[c] = result;
-  return result;
-}
-
-function QuoteJSONString(str) {
-  var quotable = /[\\\"\x00-\x1f\x80-\uffff]/g;
-  return '"' + str.replace(quotable, QuoteSingleJSONCharacter) + '"';
-}
-
-function StackContains(stack, val) {
-  var length = stack.length;
-  for (var i = 0; i < length; i++) {
-    if (stack[i] === val) {
-      return true;
-    }
-  }
-  return false;
-}
-
 function SerializeArray(value, replacer, stack, indent, gap) {
-  if (StackContains(stack, value)) {
-    throw MakeTypeError('circular_structure', []);
+  if (!%PushIfAbsent(stack, value)) {
+    throw MakeTypeError('circular_structure', $Array());
   }
-  stack.push(value);
   var stepback = indent;
   indent += gap;
-  var partial = [];
+  var partial = new InternalArray();
   var len = value.length;
   for (var i = 0; i < len; i++) {
     var strP = JSONSerialize($String(i), value, replacer, stack,
@@ -141,21 +92,20 @@ function SerializeArray(value, replacer, stack, indent, gap) {
 }
 
 function SerializeObject(value, replacer, stack, indent, gap) {
-  if (StackContains(stack, value)) {
-    throw MakeTypeError('circular_structure', []);
+  if (!%PushIfAbsent(stack, value)) {
+    throw MakeTypeError('circular_structure', $Array());
   }
-  stack.push(value);
   var stepback = indent;
   indent += gap;
-  var partial = [];
+  var partial = new InternalArray();
   if (IS_ARRAY(replacer)) {
     var length = replacer.length;
     for (var i = 0; i < length; i++) {
-      if (ObjectHasOwnProperty.call(replacer, i)) {
+      if (%_CallFunction(replacer, i, ObjectHasOwnProperty)) {
         var p = replacer[i];
         var strP = JSONSerialize(p, value, replacer, stack, indent, gap);
         if (!IS_UNDEFINED(strP)) {
-          var member = QuoteJSONString(p) + ":";
+          var member = %QuoteJSONString(p) + ":";
           if (gap != "") member += " ";
           member += strP;
           partial.push(member);
@@ -164,10 +114,10 @@ function SerializeObject(value, replacer, stack, indent, gap) {
     }
   } else {
     for (var p in value) {
-      if (ObjectHasOwnProperty.call(value, p)) {
+      if (%_CallFunction(value, p, ObjectHasOwnProperty)) {
         var strP = JSONSerialize(p, value, replacer, stack, indent, gap);
         if (!IS_UNDEFINED(strP)) {
-          var member = QuoteJSONString(p) + ":";
+          var member = %QuoteJSONString(p) + ":";
           if (gap != "") member += " ";
           member += strP;
           partial.push(member);
@@ -191,78 +141,86 @@ function SerializeObject(value, replacer, stack, indent, gap) {
 
 function JSONSerialize(key, holder, replacer, stack, indent, gap) {
   var value = holder[key];
-  if (IS_OBJECT(value) && value) {
+  if (IS_SPEC_OBJECT(value)) {
     var toJSON = value.toJSON;
-    if (IS_FUNCTION(toJSON)) {
-      value = toJSON.call(value, key);
+    if (IS_SPEC_FUNCTION(toJSON)) {
+      value = %_CallFunction(value, key, toJSON);
     }
   }
-  if (IS_FUNCTION(replacer)) {
-    value = replacer.call(holder, key, value);
+  if (IS_SPEC_FUNCTION(replacer)) {
+    value = %_CallFunction(holder, key, value, replacer);
   }
-  // Unwrap value if necessary
-  if (IS_OBJECT(value)) {
-    if (IS_NUMBER_WRAPPER(value)) {
-      value = $Number(value);
+  if (IS_STRING(value)) {
+    return %QuoteJSONString(value);
+  } else if (IS_NUMBER(value)) {
+    return JSON_NUMBER_TO_STRING(value);
+  } else if (IS_BOOLEAN(value)) {
+    return value ? "true" : "false";
+  } else if (IS_NULL(value)) {
+    return "null";
+  } else if (IS_SPEC_OBJECT(value) && !(typeof value == "function")) {
+    // Non-callable object. If it's a primitive wrapper, it must be unwrapped.
+    if (IS_ARRAY(value)) {
+      return SerializeArray(value, replacer, stack, indent, gap);
+    } else if (IS_NUMBER_WRAPPER(value)) {
+      value = ToNumber(value);
+      return JSON_NUMBER_TO_STRING(value);
     } else if (IS_STRING_WRAPPER(value)) {
-      value = $String(value);
+      return %QuoteJSONString(ToString(value));
     } else if (IS_BOOLEAN_WRAPPER(value)) {
-      value = $Boolean(value);
+      return %_ValueOf(value) ? "true" : "false";
+    } else {
+      return SerializeObject(value, replacer, stack, indent, gap);
     }
   }
-  switch (typeof value) {
-    case "string":
-      return QuoteJSONString(value);
-    case "object":
-      if (!value) {
-        return "null";
-      } else if (IS_ARRAY(value)) {
-        return SerializeArray(value, replacer, stack, indent, gap);
-      } else {
-        return SerializeObject(value, replacer, stack, indent, gap);
-      }
-    case "number":
-      return $isFinite(value) ? $String(value) : "null";
-    case "boolean":
-      return value ? "true" : "false";
-  }
+  // Undefined or a callable object.
+  return void 0;
 }
 
+
 function JSONStringify(value, replacer, space) {
-  var stack = [];
-  var indent = "";
+  if (%_ArgumentsLength() == 1) {
+    return %BasicJSONStringify(value);
+  }
   if (IS_OBJECT(space)) {
     // Unwrap 'space' if it is wrapped
     if (IS_NUMBER_WRAPPER(space)) {
-      space = $Number(space);
+      space = ToNumber(space);
     } else if (IS_STRING_WRAPPER(space)) {
-      space = $String(space);
+      space = ToString(space);
     }
   }
   var gap;
   if (IS_NUMBER(space)) {
-    space = $Math.min(space, 10);
-    gap = "";
-    for (var i = 0; i < space; i++) {
-      gap += " ";
-    }
+    space = MathMax(0, MathMin(ToInteger(space), 10));
+    gap = SubString("          ", 0, space);
   } else if (IS_STRING(space)) {
     if (space.length > 10) {
-      gap = space.substring(0, 10);
+      gap = SubString(space, 0, 10);
     } else {
       gap = space;
     }
   } else {
     gap = "";
   }
-  return JSONSerialize('', {'': value}, replacer, stack, indent, gap);
+  return JSONSerialize('', {'': value}, replacer, new InternalArray(), "", gap);
 }
 
-function SetupJSON() {
+
+function SetUpJSON() {
+  %CheckIsBootstrapping();
   InstallFunctions($JSON, DONT_ENUM, $Array(
     "parse", JSONParse,
     "stringify", JSONStringify
   ));
 }
 
-SetupJSON();
+
+function JSONSerializeAdapter(key, object) {
+  var holder = {};
+  holder[key] = object;
+  // No need to pass the actual holder since there is no replacer function.
+  return JSONSerialize(key, holder, void 0, new InternalArray(), "", "");
+}
+
+SetUpJSON();

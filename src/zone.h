@@ -1,4 +1,4 @@
-// Copyright 2006-2008 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -28,6 +28,13 @@
 #ifndef V8_ZONE_H_
 #define V8_ZONE_H_
 
+#include "allocation.h"
+#include "checks.h"
+#include "hashmap.h"
+#include "globals.h"
+#include "list.h"
+#include "splay-tree.h"
+
 namespace v8 {
 namespace internal {
 
@@ -39,6 +46,8 @@ enum ZoneScopeMode {
   DONT_DELETE_ON_EXIT
 };
 
+class Segment;
+class Isolate;
 
 // The Zone supports very fast allocation of small chunks of
 // memory. The chunks cannot be deallocated individually, but instead
@@ -55,25 +64,39 @@ enum ZoneScopeMode {
 
 class Zone {
  public:
+  explicit Zone(Isolate* isolate);
+  ~Zone() { DeleteKeptSegment(); }
   // Allocate 'size' bytes of memory in the Zone; expands the Zone by
   // allocating new segments of memory on demand using malloc().
-  static inline void* New(int size);
+  inline void* New(int size);
 
   template <typename T>
-  static inline T* NewArray(int length);
+  inline T* NewArray(int length);
 
-  // Delete all objects and free all memory allocated in the Zone.
-  static void DeleteAll();
+  // Deletes all objects and free all memory allocated in the Zone. Keeps one
+  // small (size <= kMaximumKeptSegmentSize) segment around if it finds one.
+  void DeleteAll();
+
+  // Deletes the last small segment kept around by DeleteAll().
+  void DeleteKeptSegment();
 
   // Returns true if more memory has been allocated in zones than
   // the limit allows.
-  static inline bool excess_allocation();
+  inline bool excess_allocation();
 
-  static inline void adjust_segment_bytes_allocated(int delta);
+  inline void adjust_segment_bytes_allocated(int delta);
+
+  inline Isolate* isolate() { return isolate_; }
+
+  static unsigned allocation_size_;
 
  private:
+  friend class Isolate;
+  friend class ZoneScope;
 
-  // All pointers returned from New() have this alignment.
+  // All pointers returned from New() have this alignment.  In addition, if the
+  // object being allocated has a size that is divisible by 8 then its alignment
+  // will be 8.
   static const int kAlignment = kPointerSize;
 
   // Never allocate segments smaller than this size in bytes.
@@ -86,30 +109,36 @@ class Zone {
   static const int kMaximumKeptSegmentSize = 64 * KB;
 
   // Report zone excess when allocation exceeds this limit.
-  static int zone_excess_limit_;
+  int zone_excess_limit_;
 
   // The number of bytes allocated in segments.  Note that this number
   // includes memory allocated from the OS but not yet allocated from
   // the zone.
-  static int segment_bytes_allocated_;
-
-  // The Zone is intentionally a singleton; you should not try to
-  // allocate instances of the class.
-  Zone() { UNREACHABLE(); }
-
+  int segment_bytes_allocated_;
 
   // Expand the Zone to hold at least 'size' more bytes and allocate
   // the bytes. Returns the address of the newly allocated chunk of
   // memory in the Zone. Should only be called if there isn't enough
   // room in the Zone already.
-  static Address NewExpand(int size);
+  Address NewExpand(int size);
 
+  // Creates a new segment, sets it size, and pushes it to the front
+  // of the segment chain. Returns the new segment.
+  Segment* NewSegment(int size);
+
+  // Deletes the given segment. Does not touch the segment chain.
+  void DeleteSegment(Segment* segment, int size);
 
   // The free region in the current (front) segment is represented as
   // the half-open interval [position, limit). The 'position' variable
   // is guaranteed to be aligned as dictated by kAlignment.
-  static Address position_;
-  static Address limit_;
+  Address position_;
+  Address limit_;
+
+  int scope_nesting_;
+
+  Segment* segment_head_;
+  Isolate* isolate_;
 };
 
 
@@ -118,7 +147,7 @@ class Zone {
 class ZoneObject {
  public:
   // Allocate a new ZoneObject of 'size' bytes in the Zone.
-  void* operator new(size_t size) { return Zone::New(static_cast<int>(size)); }
+  INLINE(void* operator new(size_t size, Zone* zone));
 
   // Ideally, the delete operator should be private instead of
   // public, but unfortunately the compiler sometimes synthesizes
@@ -129,32 +158,20 @@ class ZoneObject {
   // ZoneObjects should never be deleted individually; use
   // Zone::DeleteAll() to delete all zone objects in one go.
   void operator delete(void*, size_t) { UNREACHABLE(); }
+  void operator delete(void* pointer, Zone* zone) { UNREACHABLE(); }
 };
 
 
-class AssertNoZoneAllocation {
+// The ZoneAllocationPolicy is used to specialize generic data
+// structures to allocate themselves and their elements in the Zone.
+struct ZoneAllocationPolicy {
  public:
-  AssertNoZoneAllocation() : prev_(allow_allocation_) {
-    allow_allocation_ = false;
-  }
-  ~AssertNoZoneAllocation() { allow_allocation_ = prev_; }
-  static bool allow_allocation() { return allow_allocation_; }
+  explicit ZoneAllocationPolicy(Zone* zone) : zone_(zone) { }
+  INLINE(void* New(size_t size));
+  INLINE(static void Delete(void *pointer)) { }
+
  private:
-  bool prev_;
-  static bool allow_allocation_;
-};
-
-
-// The ZoneListAllocationPolicy is used to specialize the GenericList
-// implementation to allocate ZoneLists and their elements in the
-// Zone.
-class ZoneListAllocationPolicy {
- public:
-  // Allocate 'size' bytes of memory in the zone.
-  static void* New(int size) {  return Zone::New(size); }
-
-  // De-allocation attempts are silently ignored.
-  static void Delete(void* p) { }
+  Zone* zone_;
 };
 
 
@@ -163,12 +180,52 @@ class ZoneListAllocationPolicy {
 // Zone. ZoneLists cannot be deleted individually; you can delete all
 // objects in the Zone by calling Zone::DeleteAll().
 template<typename T>
-class ZoneList: public List<T, ZoneListAllocationPolicy> {
+class ZoneList: public List<T, ZoneAllocationPolicy> {
  public:
   // Construct a new ZoneList with the given capacity; the length is
   // always zero. The capacity must be non-negative.
-  explicit ZoneList(int capacity)
-      : List<T, ZoneListAllocationPolicy>(capacity) { }
+  ZoneList(int capacity, Zone* zone)
+      : List<T, ZoneAllocationPolicy>(capacity, ZoneAllocationPolicy(zone)) { }
+
+  INLINE(void* operator new(size_t size, Zone* zone));
+
+  // Construct a new ZoneList by copying the elements of the given ZoneList.
+  ZoneList(const ZoneList<T>& other, Zone* zone)
+      : List<T, ZoneAllocationPolicy>(other.length(),
+                                      ZoneAllocationPolicy(zone)) {
+    AddAll(other, ZoneAllocationPolicy(zone));
+  }
+
+  // We add some convenience wrappers so that we can pass in a Zone
+  // instead of a (less convenient) ZoneAllocationPolicy.
+  INLINE(void Add(const T& element, Zone* zone)) {
+    List<T, ZoneAllocationPolicy>::Add(element, ZoneAllocationPolicy(zone));
+  }
+  INLINE(void AddAll(const List<T, ZoneAllocationPolicy>& other,
+                     Zone* zone)) {
+    List<T, ZoneAllocationPolicy>::AddAll(other, ZoneAllocationPolicy(zone));
+  }
+  INLINE(void AddAll(const Vector<T>& other, Zone* zone)) {
+    List<T, ZoneAllocationPolicy>::AddAll(other, ZoneAllocationPolicy(zone));
+  }
+  INLINE(void InsertAt(int index, const T& element, Zone* zone)) {
+    List<T, ZoneAllocationPolicy>::InsertAt(index, element,
+                                            ZoneAllocationPolicy(zone));
+  }
+  INLINE(Vector<T> AddBlock(T value, int count, Zone* zone)) {
+    return List<T, ZoneAllocationPolicy>::AddBlock(value, count,
+                                                   ZoneAllocationPolicy(zone));
+  }
+  INLINE(void Allocate(int length, Zone* zone)) {
+    List<T, ZoneAllocationPolicy>::Allocate(length, ZoneAllocationPolicy(zone));
+  }
+  INLINE(void Initialize(int capacity, Zone* zone)) {
+    List<T, ZoneAllocationPolicy>::Initialize(capacity,
+                                              ZoneAllocationPolicy(zone));
+  }
+
+  void operator delete(void* pointer) { UNREACHABLE(); }
+  void operator delete(void* pointer, Zone* zone) { UNREACHABLE(); }
 };
 
 
@@ -177,18 +234,11 @@ class ZoneList: public List<T, ZoneListAllocationPolicy> {
 // outer-most scope.
 class ZoneScope BASE_EMBEDDED {
  public:
-  explicit ZoneScope(ZoneScopeMode mode) : mode_(mode) {
-    nesting_++;
-  }
+  INLINE(ZoneScope(Zone* zone, ZoneScopeMode mode));
 
-  virtual ~ZoneScope() {
-    if (ShouldDeleteOnExit()) Zone::DeleteAll();
-    --nesting_;
-  }
+  virtual ~ZoneScope();
 
-  bool ShouldDeleteOnExit() {
-    return nesting_ == 1 && mode_ == DELETE_ON_EXIT;
-  }
+  inline bool ShouldDeleteOnExit();
 
   // For ZoneScopes that do not delete on exit by default, call this
   // method to request deletion on exit.
@@ -196,11 +246,11 @@ class ZoneScope BASE_EMBEDDED {
     mode_ = DELETE_ON_EXIT;
   }
 
-  static int nesting() { return nesting_; }
+  inline static int nesting();
 
  private:
+  Zone* zone_;
   ZoneScopeMode mode_;
-  static int nesting_;
 };
 
 
@@ -208,13 +258,15 @@ class ZoneScope BASE_EMBEDDED {
 // different configurations of a concrete splay tree (see splay-tree.h).
 // The tree itself and all its elements are allocated in the Zone.
 template <typename Config>
-class ZoneSplayTree: public SplayTree<Config, ZoneListAllocationPolicy> {
+class ZoneSplayTree: public SplayTree<Config, ZoneAllocationPolicy> {
  public:
-  ZoneSplayTree()
-      : SplayTree<Config, ZoneListAllocationPolicy>() {}
+  explicit ZoneSplayTree(Zone* zone)
+      : SplayTree<Config, ZoneAllocationPolicy>(ZoneAllocationPolicy(zone)) {}
   ~ZoneSplayTree();
 };
 
+
+typedef TemplateHashMapImpl<ZoneAllocationPolicy> ZoneHashMap;
 
 } }  // namespace v8::internal
 

@@ -1,4 +1,4 @@
-// Copyright 2006-2008 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -29,6 +29,8 @@
 #define V8_IC_INL_H_
 
 #include "ic.h"
+
+#include "compiler.h"
 #include "debug.h"
 #include "macro-assembler.h"
 
@@ -36,18 +38,20 @@ namespace v8 {
 namespace internal {
 
 
-Address IC::address() {
+Address IC::address() const {
   // Get the address of the call.
-  Address result = pc() - Assembler::kCallTargetAddressOffset;
+  Address result = Assembler::target_address_from_return_address(pc());
 
 #ifdef ENABLE_DEBUGGER_SUPPORT
+  ASSERT(Isolate::Current() == isolate());
+  Debug* debug = isolate()->debug();
   // First check if any break points are active if not just return the address
   // of the call.
-  if (!Debug::has_break_points()) return result;
+  if (!debug->has_break_points()) return result;
 
   // At least one break point is active perform additional test to ensure that
   // break point locations are updated correctly.
-  if (Debug::IsDebugBreak(Assembler::target_address_at(result))) {
+  if (debug->IsDebugBreak(Assembler::target_address_at(result))) {
     // If the call site is a call to debug break then return the address in
     // the original code instead of the address in the running code. This will
     // cause the original code to be updated and keeps the breakpoint active in
@@ -75,16 +79,60 @@ Code* IC::GetTargetAtAddress(Address address) {
 
 
 void IC::SetTargetAtAddress(Address address, Code* target) {
-  ASSERT(target->is_inline_cache_stub());
+  ASSERT(target->is_inline_cache_stub() || target->is_compare_ic_stub());
+  Heap* heap = target->GetHeap();
+  Code* old_target = GetTargetAtAddress(address);
+#ifdef DEBUG
+  // STORE_IC and KEYED_STORE_IC use Code::extra_ic_state() to mark
+  // ICs as strict mode. The strict-ness of the IC must be preserved.
+  if (old_target->kind() == Code::STORE_IC ||
+      old_target->kind() == Code::KEYED_STORE_IC) {
+    ASSERT(Code::GetStrictMode(old_target->extra_ic_state()) ==
+           Code::GetStrictMode(target->extra_ic_state()));
+  }
+#endif
   Assembler::set_target_address_at(address, target->instruction_start());
+  if (heap->gc_state() == Heap::MARK_COMPACT) {
+    heap->mark_compact_collector()->RecordCodeTargetPatch(address, target);
+  } else {
+    heap->incremental_marking()->RecordCodeTargetPatch(address, target);
+  }
+  PostPatching(address, target, old_target);
 }
 
 
-Map* IC::GetCodeCacheMapForObject(Object* object) {
-  if (object->IsJSObject()) return JSObject::cast(object)->map();
+InlineCacheHolderFlag IC::GetCodeCacheForObject(Object* object,
+                                                JSObject* holder) {
+  if (object->IsJSObject()) {
+    return GetCodeCacheForObject(JSObject::cast(object), holder);
+  }
   // If the object is a value, we use the prototype map for the cache.
   ASSERT(object->IsString() || object->IsNumber() || object->IsBoolean());
-  return JSObject::cast(object->GetPrototype())->map();
+  return PROTOTYPE_MAP;
+}
+
+
+InlineCacheHolderFlag IC::GetCodeCacheForObject(JSObject* object,
+                                                JSObject* holder) {
+  // Fast-properties and global objects store stubs in their own maps.
+  // Slow properties objects use prototype's map (unless the property is its own
+  // when holder == object). It works because slow properties objects having
+  // the same prototype (or a prototype with the same map) and not having
+  // the property are interchangeable for such a stub.
+  if (holder != object &&
+      !object->HasFastProperties() &&
+      !object->IsJSGlobalProxy() &&
+      !object->IsJSGlobalObject()) {
+    return PROTOTYPE_MAP;
+  }
+  return OWN_MAP;
+}
+
+
+JSObject* IC::GetCodeCacheHolder(Object* object, InlineCacheHolderFlag holder) {
+  Object* map_owner = (holder == OWN_MAP ? object : object->GetPrototype());
+  ASSERT(map_owner->IsJSObject());
+  return JSObject::cast(map_owner);
 }
 
 

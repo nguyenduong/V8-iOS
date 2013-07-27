@@ -30,10 +30,10 @@
 
 #if V8_TARGET_ARCH_IA32
 #include "ia32/simulator-ia32.h"
-#elif V8_TARGET_ARCH_X64
-#include "x64/simulator-x64.h"
 #elif V8_TARGET_ARCH_VM
 #include "vm/simulator-vm.h"
+#elif V8_TARGET_ARCH_X64
+#include "x64/simulator-x64.h"
 #elif V8_TARGET_ARCH_ARM
 #include "arm/simulator-arm.h"
 #elif V8_TARGET_ARCH_MIPS

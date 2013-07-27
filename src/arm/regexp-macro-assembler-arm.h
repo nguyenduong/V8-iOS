@@ -1,4 +1,4 @@
-// Copyright 2006-2008 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -28,21 +28,17 @@
 #ifndef V8_ARM_REGEXP_MACRO_ASSEMBLER_ARM_H_
 #define V8_ARM_REGEXP_MACRO_ASSEMBLER_ARM_H_
 
+#include "arm/assembler-arm.h"
+#include "arm/assembler-arm-inl.h"
+
 namespace v8 {
 namespace internal {
 
 
-#ifdef V8_INTERPRETED_REGEXP
-class RegExpMacroAssemblerARM: public RegExpMacroAssembler {
- public:
-  RegExpMacroAssemblerARM();
-  virtual ~RegExpMacroAssemblerARM();
-};
-
-#else  // V8_INTERPRETED_REGEXP
+#ifndef V8_INTERPRETED_REGEXP
 class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
  public:
-  RegExpMacroAssemblerARM(Mode mode, int registers_to_save);
+  RegExpMacroAssemblerARM(Mode mode, int registers_to_save, Zone* zone);
   virtual ~RegExpMacroAssemblerARM();
   virtual int stack_limit_slack();
   virtual void AdvanceCurrentPosition(int by);
@@ -50,9 +46,9 @@ class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
   virtual void Backtrack();
   virtual void Bind(Label* label);
   virtual void CheckAtStart(Label* on_at_start);
-  virtual void CheckCharacter(uint32_t c, Label* on_equal);
-  virtual void CheckCharacterAfterAnd(uint32_t c,
-                                      uint32_t mask,
+  virtual void CheckCharacter(unsigned c, Label* on_equal);
+  virtual void CheckCharacterAfterAnd(unsigned c,
+                                      unsigned mask,
                                       Label* on_equal);
   virtual void CheckCharacterGT(uc16 limit, Label* on_greater);
   virtual void CheckCharacterLT(uc16 limit, Label* on_less);
@@ -67,22 +63,29 @@ class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
   virtual void CheckNotBackReference(int start_reg, Label* on_no_match);
   virtual void CheckNotBackReferenceIgnoreCase(int start_reg,
                                                Label* on_no_match);
-  virtual void CheckNotRegistersEqual(int reg1, int reg2, Label* on_not_equal);
-  virtual void CheckNotCharacter(uint32_t c, Label* on_not_equal);
-  virtual void CheckNotCharacterAfterAnd(uint32_t c,
-                                         uint32_t mask,
+  virtual void CheckNotCharacter(unsigned c, Label* on_not_equal);
+  virtual void CheckNotCharacterAfterAnd(unsigned c,
+                                         unsigned mask,
                                          Label* on_not_equal);
   virtual void CheckNotCharacterAfterMinusAnd(uc16 c,
                                               uc16 minus,
                                               uc16 mask,
                                               Label* on_not_equal);
+  virtual void CheckCharacterInRange(uc16 from,
+                                     uc16 to,
+                                     Label* on_in_range);
+  virtual void CheckCharacterNotInRange(uc16 from,
+                                        uc16 to,
+                                        Label* on_not_in_range);
+  virtual void CheckBitInTable(Handle<ByteArray> table, Label* on_bit_set);
+
   // Checks whether the given offset from the current position is before
   // the end of the string.
   virtual void CheckPosition(int cp_offset, Label* on_outside_input);
   virtual bool CheckSpecialCharacterClass(uc16 type,
                                           Label* on_no_match);
   virtual void Fail();
-  virtual Handle<Object> GetCode(Handle<String> source);
+  virtual Handle<HeapObject> GetCode(Handle<String> source);
   virtual void GoTo(Label* label);
   virtual void IfRegisterGE(int reg, int comparand, Label* if_ge);
   virtual void IfRegisterLT(int reg, int comparand, Label* if_lt);
@@ -100,11 +103,13 @@ class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
                             StackCheckFlag check_stack_limit);
   virtual void ReadCurrentPositionFromRegister(int reg);
   virtual void ReadStackPointerFromRegister(int reg);
+  virtual void SetCurrentPositionFromEnd(int by);
   virtual void SetRegister(int register_index, int to);
-  virtual void Succeed();
+  virtual bool Succeed();
   virtual void WriteCurrentPositionToRegister(int reg, int cp_offset);
   virtual void ClearRegisters(int reg_from, int reg_to);
   virtual void WriteStackPointerToRegister(int reg);
+  virtual bool CanReadUnaligned();
 
   // Called from RegExp if the stack-guard is triggered.
   // If the code object is relocated, the return address is fixed before
@@ -112,6 +117,7 @@ class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
   static int CheckStackGuardState(Address* return_address,
                                   Code* re_code,
                                   Address re_frame);
+
  private:
   // Offsets from frame_pointer() of function parameters and stored registers.
   static const int kFramePointer = 0;
@@ -121,10 +127,13 @@ class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
   static const int kStoredRegisters = kFramePointer;
   // Return address (stored from link register, read into pc on return).
   static const int kReturnAddress = kStoredRegisters + 8 * kPointerSize;
+  static const int kSecondaryReturnAddress = kReturnAddress + kPointerSize;
   // Stack parameters placed by caller.
-  static const int kRegisterOutput = kReturnAddress + kPointerSize;
-  static const int kStackHighEnd = kRegisterOutput + kPointerSize;
+  static const int kRegisterOutput = kSecondaryReturnAddress + kPointerSize;
+  static const int kNumOutputRegisters = kRegisterOutput + kPointerSize;
+  static const int kStackHighEnd = kNumOutputRegisters + kPointerSize;
   static const int kDirectCall = kStackHighEnd + kPointerSize;
+  static const int kIsolate = kDirectCall + kPointerSize;
 
   // Below the frame pointer.
   // Register parameters stored by setup code.
@@ -134,10 +143,10 @@ class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
   static const int kInputString = kStartIndex - kPointerSize;
   // When adding local variables remember to push space for them in
   // the frame in GetCode.
-  static const int kInputStartMinusOne = kInputString - kPointerSize;
-  static const int kAtStart = kInputStartMinusOne - kPointerSize;
+  static const int kSuccessfulCaptures = kInputString - kPointerSize;
+  static const int kInputStartMinusOne = kSuccessfulCaptures - kPointerSize;
   // First register address. Following registers are below it on the stack.
-  static const int kRegisterZero = kAtStart - kPointerSize;
+  static const int kRegisterZero = kInputStartMinusOne - kPointerSize;
 
   // Initial size of code buffer.
   static const size_t kRegExpCodeSize = 1024;
@@ -240,22 +249,6 @@ class RegExpMacroAssemblerARM: public NativeRegExpMacroAssembler {
   Label exit_label_;
   Label check_preempt_label_;
   Label stack_overflow_label_;
-};
-
-
-// Enter C code from generated RegExp code in a way that allows
-// the C code to fix the return address in case of a GC.
-// Currently only needed on ARM.
-class RegExpCEntryStub: public CodeStub {
- public:
-  RegExpCEntryStub() {}
-  virtual ~RegExpCEntryStub() {}
-  void Generate(MacroAssembler* masm);
-
- private:
-  Major MajorKey() { return RegExpCEntry; }
-  int MinorKey() { return 0; }
-  const char* GetName() { return "RegExpCEntryStub"; }
 };
 
 #endif  // V8_INTERPRETED_REGEXP

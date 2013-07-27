@@ -28,21 +28,18 @@
 #ifndef V8_PROFILE_GENERATOR_INL_H_
 #define V8_PROFILE_GENERATOR_INL_H_
 
-#ifdef ENABLE_LOGGING_AND_PROFILING
-
 #include "profile-generator.h"
 
 namespace v8 {
 namespace internal {
 
-CodeEntry::CodeEntry(int security_token_id)
-    : call_uid_(0),
-      tag_(Logger::FUNCTION_TAG),
-      name_prefix_(kEmptyNamePrefix),
-      name_(""),
-      resource_name_(""),
-      line_number_(0),
-      security_token_id_(security_token_id) {
+const char* StringsStorage::GetFunctionName(String* name) {
+  return GetFunctionName(GetName(name));
+}
+
+
+const char* StringsStorage::GetFunctionName(const char* name) {
+  return strlen(name) > 0 ? name : ProfileGenerator::kAnonymousFunctionName;
 }
 
 
@@ -52,12 +49,12 @@ CodeEntry::CodeEntry(Logger::LogEventsAndTags tag,
                      const char* resource_name,
                      int line_number,
                      int security_token_id)
-    : call_uid_(next_call_uid_++),
-      tag_(tag),
+    : tag_(tag),
       name_prefix_(name_prefix),
       name_(name),
       resource_name_(resource_name),
       line_number_(line_number),
+      shared_id_(0),
       security_token_id_(security_token_id) {
 }
 
@@ -81,45 +78,13 @@ ProfileNode::ProfileNode(ProfileTree* tree, CodeEntry* entry)
 }
 
 
-void CodeMap::AddCode(Address addr, CodeEntry* entry, unsigned size) {
-  CodeTree::Locator locator;
-  tree_.Insert(addr, &locator);
-  locator.set_value(CodeEntryInfo(entry, size));
-}
-
-
-void CodeMap::MoveCode(Address from, Address to) {
-  tree_.Move(from, to);
-}
-
-void CodeMap::DeleteCode(Address addr) {
-  tree_.Remove(addr);
-}
-
-
-bool CpuProfilesCollection::is_last_profile() {
-  // Called from VM thread, and only it can mutate the list,
-  // so no locking is needed here.
-  return current_profiles_.length() == 1;
-}
-
-
-const char* CpuProfilesCollection::GetFunctionName(String* name) {
-  return GetFunctionName(GetName(name));
-}
-
-
-const char* CpuProfilesCollection::GetFunctionName(const char* name) {
-  return strlen(name) > 0 ? name : ProfileGenerator::kAnonymousFunctionName;
-}
-
-
 CodeEntry* ProfileGenerator::EntryForVMState(StateTag tag) {
   switch (tag) {
     case GC:
       return gc_entry_;
     case JS:
     case COMPILER:
+    case PARALLEL_COMPILER:
     // DOM events handlers are reported as OTHER / EXTERNAL entries.
     // To avoid confusing people, let's put all these entries into
     // one bucket.
@@ -131,18 +96,54 @@ CodeEntry* ProfileGenerator::EntryForVMState(StateTag tag) {
 }
 
 
-template<class Visitor>
-void HeapEntriesMap::Apply(Visitor* visitor) {
-  for (HashMap::Entry* p = entries_.Start();
-       p != NULL;
-       p = entries_.Next(p)) {
-    if (!IsAlias(p->value))
-      visitor->Apply(reinterpret_cast<HeapEntry*>(p->value));
-  }
+HeapEntry* HeapGraphEdge::from() const {
+  return &snapshot()->entries()[from_index_];
+}
+
+
+HeapSnapshot* HeapGraphEdge::snapshot() const {
+  return to_entry_->snapshot();
+}
+
+
+int HeapEntry::index() const {
+  return static_cast<int>(this - &snapshot_->entries().first());
+}
+
+
+int HeapEntry::set_children_index(int index) {
+  children_index_ = index;
+  int next_index = index + children_count_;
+  children_count_ = 0;
+  return next_index;
+}
+
+
+HeapGraphEdge** HeapEntry::children_arr() {
+  ASSERT(children_index_ >= 0);
+  return &snapshot_->children()[children_index_];
+}
+
+
+SnapshotObjectId HeapObjectsMap::GetNthGcSubrootId(int delta) {
+  return kGcRootsFirstSubrootId + delta * kObjectIdStep;
+}
+
+
+HeapObject* V8HeapExplorer::GetNthGcSubrootObject(int delta) {
+  return reinterpret_cast<HeapObject*>(
+      reinterpret_cast<char*>(kFirstGcSubrootObject) +
+      delta * HeapObjectsMap::kObjectIdStep);
+}
+
+
+int V8HeapExplorer::GetGcSubrootOrder(HeapObject* subroot) {
+  return static_cast<int>(
+      (reinterpret_cast<char*>(subroot) -
+       reinterpret_cast<char*>(kFirstGcSubrootObject)) /
+      HeapObjectsMap::kObjectIdStep);
 }
 
 } }  // namespace v8::internal
-
-#endif  // ENABLE_LOGGING_AND_PROFILING
 
 #endif  // V8_PROFILE_GENERATOR_INL_H_

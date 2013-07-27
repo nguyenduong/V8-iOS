@@ -34,8 +34,8 @@ The stats viewer reads counters from a binary file and displays them
 in a window, re-reading and re-displaying with regular intervals.
 """
 
-
 import mmap
+import optparse
 import os
 import re
 import struct
@@ -60,13 +60,15 @@ CHROME_COUNTERS_FILE_MAGIC_NUMBER = 0x13131313
 class StatsViewer(object):
   """The main class that keeps the data used by the stats viewer."""
 
-  def __init__(self, data_name):
+  def __init__(self, data_name, name_filter):
     """Creates a new instance.
 
     Args:
       data_name: the name of the file containing the counters.
+      name_filter: The regexp filter to apply to counter names.
     """
     self.data_name = data_name
+    self.name_filter = name_filter
 
     # The handle created by mmap.mmap to the counters file.  We need
     # this to clean it up on exit.
@@ -102,10 +104,12 @@ class StatsViewer(object):
         sys.exit(1)
       maps_file = open(maps_name, "r")
       try:
-        m = re.search(r"/dev/shm/\S*", maps_file.read())
-        if m is not None and os.path.exists(m.group(0)):
-          self.data_name = m.group(0)
-        else:
+        self.data_name = None
+        for m in re.finditer(r"/dev/shm/\S*", maps_file.read()):
+          if os.path.exists(m.group(0)):
+            self.data_name = m.group(0)
+            break
+        if self.data_name is None:
           print "Can't find counter file in maps for PID %s." % self.data_name
           sys.exit(1)
       finally:
@@ -224,17 +228,19 @@ class StatsViewer(object):
     sorted_groups.sort()
     for counter_name in sorted_groups:
       counter_objs = groups[counter_name]
-      name = Tkinter.Label(self.root, width=50, anchor=Tkinter.W,
-                           text=counter_name)
-      name.grid(row=index, column=0, padx=1, pady=1)
+      if self.name_filter.match(counter_name):
+        name = Tkinter.Label(self.root, width=50, anchor=Tkinter.W,
+                             text=counter_name)
+        name.grid(row=index, column=0, padx=1, pady=1)
       count = len(counter_objs)
       for i in xrange(count):
         counter = counter_objs[i]
         name = counter.Name()
         var = Tkinter.StringVar()
-        value = Tkinter.Label(self.root, width=15, anchor=Tkinter.W,
-                              textvariable=var)
-        value.grid(row=index, column=(1 + i), padx=1, pady=1)
+        if self.name_filter.match(name):
+          value = Tkinter.Label(self.root, width=15, anchor=Tkinter.W,
+                                textvariable=var)
+          value.grid(row=index, column=(1 + i), padx=1, pady=1)
 
         # If we know how to interpret the prefix of this counter then
         # add an appropriate formatting to the variable
@@ -410,7 +416,8 @@ class ChromeCounterCollection(object):
   individual counters contained in the file."""
 
   _HEADER_SIZE = 4 * 4
-  _NAME_SIZE = 32
+  _COUNTER_NAME_SIZE = 64
+  _THREAD_NAME_SIZE = 32
 
   def __init__(self, data):
     """Create a new instance.
@@ -422,35 +429,44 @@ class ChromeCounterCollection(object):
     self.max_counters = data.IntAt(8)
     self.max_threads = data.IntAt(12)
     self.counter_names_offset = \
-        self._HEADER_SIZE + self.max_threads * (self._NAME_SIZE + 2 * 4)
+        self._HEADER_SIZE + self.max_threads * (self._THREAD_NAME_SIZE + 2 * 4)
     self.counter_values_offset = \
-        self.counter_names_offset + self.max_counters * self._NAME_SIZE
+        self.counter_names_offset + self.max_counters * self._COUNTER_NAME_SIZE
 
   def CountersInUse(self):
     """Return the number of counters in active use."""
     for i in xrange(self.max_counters):
-      if self.data.ByteAt(self.counter_names_offset + i * self._NAME_SIZE) == 0:
+      name_offset = self.counter_names_offset + i * self._COUNTER_NAME_SIZE
+      if self.data.ByteAt(name_offset) == 0:
         return i
     return self.max_counters
 
   def Counter(self, i):
     """Return the i'th counter."""
-    return ChromeCounter(self.data,
-                         self.counter_names_offset + i * self._NAME_SIZE,
-                         self.counter_values_offset + i * self.max_threads * 4)
+    name_offset = self.counter_names_offset + i * self._COUNTER_NAME_SIZE
+    value_offset = self.counter_values_offset + i * self.max_threads * 4
+    return ChromeCounter(self.data, name_offset, value_offset)
 
 
-def Main(data_file):
+def Main(data_file, name_filter):
   """Run the stats counter.
 
   Args:
     data_file: The counters file to monitor.
+    name_filter: The regexp filter to apply to counter names.
   """
-  StatsViewer(data_file).Run()
+  StatsViewer(data_file, name_filter).Run()
 
 
 if __name__ == "__main__":
-  if len(sys.argv) != 2:
-    print "Usage: stats-viewer.py <stats data>|<test_shell pid>"
+  parser = optparse.OptionParser("usage: %prog [--filter=re] "
+                                 "<stats data>|<test_shell pid>")
+  parser.add_option("--filter",
+                    default=".*",
+                    help=("regexp filter for counter names "
+                          "[default: %default]"))
+  (options, args) = parser.parse_args()
+  if len(args) != 1:
+    parser.print_help()
     sys.exit(1)
-  Main(sys.argv[1])
+  Main(args[0], re.compile(options.filter))

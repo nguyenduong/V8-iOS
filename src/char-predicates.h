@@ -1,4 +1,4 @@
-// Copyright 2006-2008 the V8 project authors. All rights reserved.
+// Copyright 2011 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -28,6 +28,8 @@
 #ifndef V8_CHAR_PREDICATES_H_
 #define V8_CHAR_PREDICATES_H_
 
+#include "unicode.h"
+
 namespace v8 {
 namespace internal {
 
@@ -55,6 +57,8 @@ struct IdentifierPart {
   static inline bool Is(uc32 c) {
     return IdentifierStart::Is(c)
         || unibrow::Number::Is(c)
+        || c == 0x200C  // U+200C is Zero-Width Non-Joiner.
+        || c == 0x200D  // U+200D is Zero-Width Joiner.
         || unibrow::CombiningMark::Is(c)
         || unibrow::ConnectorPunctuation::Is(c);
   }

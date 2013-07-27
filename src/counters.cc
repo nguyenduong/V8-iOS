@@ -1,4 +1,4 @@
-// Copyright 2007-2008 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -28,14 +28,22 @@
 #include "v8.h"
 
 #include "counters.h"
+#include "isolate.h"
 #include "platform.h"
 
 namespace v8 {
 namespace internal {
 
-CounterLookupCallback StatsTable::lookup_function_ = NULL;
-CreateHistogramCallback StatsTable::create_histogram_function_ = NULL;
-AddHistogramSampleCallback StatsTable::add_histogram_sample_function_ = NULL;
+StatsTable::StatsTable()
+    : lookup_function_(NULL),
+      create_histogram_function_(NULL),
+      add_histogram_sample_function_(NULL) {}
+
+
+int* StatsCounter::FindLocationInStatsTable() const {
+  return Isolate::Current()->stats_table()->FindLocation(name_);
+}
+
 
 // Start the timer.
 void StatsCounterTimer::Start() {
@@ -56,9 +64,20 @@ void StatsCounterTimer::Stop() {
   counter_.Increment(milliseconds);
 }
 
+void Histogram::AddSample(int sample) {
+  if (Enabled()) {
+    Isolate::Current()->stats_table()->AddHistogramSample(histogram_, sample);
+  }
+}
+
+void* Histogram::CreateHistogram() const {
+  return Isolate::Current()->stats_table()->
+      CreateHistogram(name_, min_, max_, num_buckets_);
+}
+
 // Start the timer.
 void HistogramTimer::Start() {
-  if (GetHistogram() != NULL) {
+  if (histogram_.Enabled() || FLAG_log_timer_events) {
     stop_time_ = 0;
     start_time_ = OS::Ticks();
   }
@@ -66,12 +85,15 @@ void HistogramTimer::Start() {
 
 // Stop the timer and record the results.
 void HistogramTimer::Stop() {
-  if (histogram_ != NULL) {
+  if (histogram_.Enabled()) {
     stop_time_ = OS::Ticks();
-
     // Compute the delta between start and stop, in milliseconds.
     int milliseconds = static_cast<int>(stop_time_ - start_time_) / 1000;
-    StatsTable::AddHistogramSample(histogram_, milliseconds);
+    histogram_.AddSample(milliseconds);
+  }
+  if (FLAG_log_timer_events) {
+    LOG(Isolate::Current(),
+        TimerEvent(histogram_.name_, start_time_, OS::Ticks()));
   }
 }
 

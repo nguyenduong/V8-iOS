@@ -35,21 +35,27 @@ namespace internal {
 
 
 template<typename T, class P>
-void List<T, P>::Add(const T& element) {
+void List<T, P>::Add(const T& element, P alloc) {
   if (length_ < capacity_) {
     data_[length_++] = element;
   } else {
-    List<T, P>::ResizeAdd(element);
+    List<T, P>::ResizeAdd(element, alloc);
   }
 }
 
 
 template<typename T, class P>
-void List<T, P>::AddAll(const List<T, P>& other) {
-  int result_length = length_ + other.length_;
-  if (capacity_ < result_length) Resize(result_length);
-  for (int i = 0; i < other.length_; i++) {
-    data_[length_ + i] = other.data_[i];
+void List<T, P>::AddAll(const List<T, P>& other, P alloc) {
+  AddAll(other.ToVector(), alloc);
+}
+
+
+template<typename T, class P>
+void List<T, P>::AddAll(const Vector<T>& other, P alloc) {
+  int result_length = length_ + other.length();
+  if (capacity_ < result_length) Resize(result_length, alloc);
+  for (int i = 0; i < other.length(); i++) {
+    data_[length_ + i] = other.at(i);
   }
   length_ = result_length;
 }
@@ -58,28 +64,28 @@ void List<T, P>::AddAll(const List<T, P>& other) {
 // Use two layers of inlining so that the non-inlined function can
 // use the same implementation as the inlined version.
 template<typename T, class P>
-void List<T, P>::ResizeAdd(const T& element) {
-  ResizeAddInternal(element);
+void List<T, P>::ResizeAdd(const T& element, P alloc) {
+  ResizeAddInternal(element, alloc);
 }
 
 
 template<typename T, class P>
-void List<T, P>::ResizeAddInternal(const T& element) {
+void List<T, P>::ResizeAddInternal(const T& element, P alloc) {
   ASSERT(length_ >= capacity_);
-  // Grow the list capacity by 50%, but make sure to let it grow
+  // Grow the list capacity by 100%, but make sure to let it grow
   // even when the capacity is zero (possible initial case).
-  int new_capacity = 1 + capacity_ + (capacity_ >> 1);
+  int new_capacity = 1 + 2 * capacity_;
   // Since the element reference could be an element of the list, copy
   // it out of the old backing storage before resizing.
   T temp = element;
-  Resize(new_capacity);
+  Resize(new_capacity, alloc);
   data_[length_++] = temp;
 }
 
 
 template<typename T, class P>
-void List<T, P>::Resize(int new_capacity) {
-  T* new_data = List<T, P>::NewData(new_capacity);
+void List<T, P>::Resize(int new_capacity, P alloc) {
+  T* new_data = NewData(new_capacity, alloc);
   memcpy(new_data, data_, capacity_ * sizeof(T));
   List<T, P>::DeleteData(data_);
   data_ = new_data;
@@ -88,10 +94,21 @@ void List<T, P>::Resize(int new_capacity) {
 
 
 template<typename T, class P>
-Vector<T> List<T, P>::AddBlock(T value, int count) {
+Vector<T> List<T, P>::AddBlock(T value, int count, P alloc) {
   int start = length_;
-  for (int i = 0; i < count; i++) Add(value);
+  for (int i = 0; i < count; i++) Add(value, alloc);
   return Vector<T>(&data_[start], count);
+}
+
+
+template<typename T, class P>
+void List<T, P>::InsertAt(int index, const T& elm, P alloc) {
+  ASSERT(index >= 0 && index <= length_);
+  Add(elm, alloc);
+  for (int i = length_ - 1; i > index; --i) {
+    data_[i] = data_[i - 1];
+  }
+  data_[index] = elm;
 }
 
 
@@ -108,9 +125,33 @@ T List<T, P>::Remove(int i) {
 
 
 template<typename T, class P>
+bool List<T, P>::RemoveElement(const T& elm) {
+  for (int i = 0; i < length_; i++) {
+    if (data_[i] == elm) {
+      Remove(i);
+      return true;
+    }
+  }
+  return false;
+}
+
+
+template<typename T, class P>
+void List<T, P>::Allocate(int length, P allocator) {
+  DeleteData(data_);
+  Initialize(length, allocator);
+  length_ = length;
+}
+
+
+template<typename T, class P>
 void List<T, P>::Clear() {
   DeleteData(data_);
-  Initialize(0);
+  // We don't call Initialize(0) since that requires passing a Zone,
+  // which we don't really need.
+  data_ = NULL;
+  capacity_ = 0;
+  length_ = 0;
 }
 
 
@@ -127,12 +168,29 @@ void List<T, P>::Iterate(void (*callback)(T* x)) {
 
 
 template<typename T, class P>
-bool List<T, P>::Contains(const T& elm) {
+template<class Visitor>
+void List<T, P>::Iterate(Visitor* visitor) {
+  for (int i = 0; i < length_; i++) visitor->Apply(&data_[i]);
+}
+
+
+template<typename T, class P>
+bool List<T, P>::Contains(const T& elm) const {
   for (int i = 0; i < length_; i++) {
     if (data_[i] == elm)
       return true;
   }
   return false;
+}
+
+
+template<typename T, class P>
+int List<T, P>::CountOccurrences(const T& elm, int start, int end) const {
+  int result = 0;
+  for (int i = start; i <= end; i++) {
+    if (data_[i] == elm) ++result;
+  }
+  return result;
 }
 
 
@@ -153,11 +211,52 @@ void List<T, P>::Sort() {
 
 
 template<typename T, class P>
-void List<T, P>::Initialize(int capacity) {
+void List<T, P>::Initialize(int capacity, P allocator) {
   ASSERT(capacity >= 0);
-  data_ = (capacity > 0) ? NewData(capacity) : NULL;
+  data_ = (capacity > 0) ? NewData(capacity, allocator) : NULL;
   capacity_ = capacity;
   length_ = 0;
+}
+
+
+template <typename T, typename P>
+int SortedListBSearch(const List<T>& list, P cmp) {
+  int low = 0;
+  int high = list.length() - 1;
+  while (low <= high) {
+    int mid = (low + high) / 2;
+    T mid_elem = list[mid];
+
+    if (cmp(&mid_elem) > 0) {
+      high = mid - 1;
+      continue;
+    }
+    if (cmp(&mid_elem) < 0) {
+      low = mid + 1;
+      continue;
+    }
+    // Found the elememt.
+    return mid;
+  }
+  return -1;
+}
+
+
+template<typename T>
+class ElementCmp {
+ public:
+  explicit ElementCmp(T e) : elem_(e) {}
+  int operator()(const T* other) {
+    return PointerValueCompare(other, &elem_);
+  }
+ private:
+  T elem_;
+};
+
+
+template <typename T>
+int SortedListBSearch(const List<T>& list, T elem) {
+  return SortedListBSearch<T, ElementCmp<T> > (list, ElementCmp<T>(elem));
 }
 
 

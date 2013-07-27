@@ -1,4 +1,4 @@
-// Copyright 2008 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -28,8 +28,14 @@
 #ifndef V8_API_H_
 #define V8_API_H_
 
+#include "v8.h"
+
+#include "../include/v8-testing.h"
 #include "apiutils.h"
+#include "contexts.h"
 #include "factory.h"
+#include "isolate.h"
+#include "list-inl.h"
 
 namespace v8 {
 
@@ -51,8 +57,8 @@ class Consts {
 class NeanderObject {
  public:
   explicit NeanderObject(int size);
-  inline NeanderObject(v8::internal::Handle<v8::internal::Object> obj);
-  inline NeanderObject(v8::internal::Object* obj);
+  explicit inline NeanderObject(v8::internal::Handle<v8::internal::Object> obj);
+  explicit inline NeanderObject(v8::internal::Object* obj);
   inline v8::internal::Object* get(int index);
   inline void set(int index, v8::internal::Object* value);
   inline v8::internal::Handle<v8::internal::JSObject> value() { return value_; }
@@ -67,7 +73,7 @@ class NeanderObject {
 class NeanderArray {
  public:
   NeanderArray();
-  inline NeanderArray(v8::internal::Handle<v8::internal::Object> obj);
+  explicit inline NeanderArray(v8::internal::Handle<v8::internal::Object> obj);
   inline v8::internal::Handle<v8::internal::JSObject> value() {
     return obj_.value();
   }
@@ -99,28 +105,29 @@ NeanderArray::NeanderArray(v8::internal::Handle<v8::internal::Object> obj)
 
 
 v8::internal::Object* NeanderObject::get(int offset) {
-  ASSERT(value()->HasFastElements());
+  ASSERT(value()->HasFastObjectElements());
   return v8::internal::FixedArray::cast(value()->elements())->get(offset);
 }
 
 
 void NeanderObject::set(int offset, v8::internal::Object* value) {
-  ASSERT(value_->HasFastElements());
+  ASSERT(value_->HasFastObjectElements());
   v8::internal::FixedArray::cast(value_->elements())->set(offset, value);
 }
 
 
-template <typename T> static inline T ToCData(v8::internal::Object* obj) {
+template <typename T> inline T ToCData(v8::internal::Object* obj) {
   STATIC_ASSERT(sizeof(T) == sizeof(v8::internal::Address));
   return reinterpret_cast<T>(
-      reinterpret_cast<intptr_t>(v8::internal::Proxy::cast(obj)->proxy()));
+      reinterpret_cast<intptr_t>(
+          v8::internal::Foreign::cast(obj)->foreign_address()));
 }
 
 
 template <typename T>
-static inline v8::internal::Handle<v8::internal::Object> FromCData(T obj) {
+inline v8::internal::Handle<v8::internal::Object> FromCData(T obj) {
   STATIC_ASSERT(sizeof(T) == sizeof(v8::internal::Address));
-  return v8::internal::Factory::NewProxy(
+  return FACTORY->NewForeign(
       reinterpret_cast<v8::internal::Address>(reinterpret_cast<intptr_t>(obj)));
 }
 
@@ -134,39 +141,43 @@ class ApiFunction {
 };
 
 
-v8::Arguments::Arguments(v8::Local<v8::Value> data,
-                         v8::Local<v8::Object> holder,
-                         v8::Local<v8::Function> callee,
-                         bool is_construct_call,
-                         void** values, int length)
-    : data_(data), holder_(holder), callee_(callee),
-      is_construct_call_(is_construct_call),
-      values_(values), length_(length) { }
-
-
-enum ExtensionTraversalState {
-  UNVISITED, VISITED, INSTALLED
-};
-
 
 class RegisteredExtension {
  public:
   explicit RegisteredExtension(Extension* extension);
   static void Register(RegisteredExtension* that);
+  static void UnregisterAll();
   Extension* extension() { return extension_; }
   RegisteredExtension* next() { return next_; }
   RegisteredExtension* next_auto() { return next_auto_; }
-  ExtensionTraversalState state() { return state_; }
-  void set_state(ExtensionTraversalState value) { state_ = value; }
   static RegisteredExtension* first_extension() { return first_extension_; }
  private:
   Extension* extension_;
   RegisteredExtension* next_;
   RegisteredExtension* next_auto_;
-  ExtensionTraversalState state_;
   static RegisteredExtension* first_extension_;
-  static RegisteredExtension* first_auto_extension_;
 };
+
+
+#define OPEN_HANDLE_LIST(V)                    \
+  V(Template, TemplateInfo)                    \
+  V(FunctionTemplate, FunctionTemplateInfo)    \
+  V(ObjectTemplate, ObjectTemplateInfo)        \
+  V(Signature, SignatureInfo)                  \
+  V(AccessorSignature, FunctionTemplateInfo)   \
+  V(TypeSwitch, TypeSwitchInfo)                \
+  V(Data, Object)                              \
+  V(RegExp, JSRegExp)                          \
+  V(Object, JSObject)                          \
+  V(Array, JSArray)                            \
+  V(String, String)                            \
+  V(Script, Object)                            \
+  V(Function, JSFunction)                      \
+  V(Message, JSObject)                         \
+  V(Context, Context)                          \
+  V(External, Foreign)                         \
+  V(StackTrace, JSArray)                       \
+  V(StackFrame, JSObject)
 
 
 class Utils {
@@ -184,12 +195,12 @@ class Utils {
       v8::internal::Handle<v8::internal::JSFunction> obj);
   static inline Local<String> ToLocal(
       v8::internal::Handle<v8::internal::String> obj);
+  static inline Local<RegExp> ToLocal(
+      v8::internal::Handle<v8::internal::JSRegExp> obj);
   static inline Local<Object> ToLocal(
       v8::internal::Handle<v8::internal::JSObject> obj);
   static inline Local<Array> ToLocal(
       v8::internal::Handle<v8::internal::JSArray> obj);
-  static inline Local<External> ToLocal(
-      v8::internal::Handle<v8::internal::Proxy> obj);
   static inline Local<Message> MessageToLocal(
       v8::internal::Handle<v8::internal::Object> obj);
   static inline Local<StackTrace> StackTraceToLocal(
@@ -208,46 +219,25 @@ class Utils {
       v8::internal::Handle<v8::internal::ObjectTemplateInfo> obj);
   static inline Local<Signature> ToLocal(
       v8::internal::Handle<v8::internal::SignatureInfo> obj);
+  static inline Local<AccessorSignature> AccessorSignatureToLocal(
+      v8::internal::Handle<v8::internal::FunctionTemplateInfo> obj);
   static inline Local<TypeSwitch> ToLocal(
       v8::internal::Handle<v8::internal::TypeSwitchInfo> obj);
+  static inline Local<External> ExternalToLocal(
+      v8::internal::Handle<v8::internal::JSObject> obj);
 
-  static inline v8::internal::Handle<v8::internal::TemplateInfo>
-      OpenHandle(const Template* that);
-  static inline v8::internal::Handle<v8::internal::FunctionTemplateInfo>
-      OpenHandle(const FunctionTemplate* that);
-  static inline v8::internal::Handle<v8::internal::ObjectTemplateInfo>
-      OpenHandle(const ObjectTemplate* that);
-  static inline v8::internal::Handle<v8::internal::Object>
-      OpenHandle(const Data* data);
-  static inline v8::internal::Handle<v8::internal::JSObject>
-      OpenHandle(const v8::Object* data);
-  static inline v8::internal::Handle<v8::internal::JSArray>
-      OpenHandle(const v8::Array* data);
-  static inline v8::internal::Handle<v8::internal::String>
-      OpenHandle(const String* data);
-  static inline v8::internal::Handle<v8::internal::Object>
-      OpenHandle(const Script* data);
-  static inline v8::internal::Handle<v8::internal::JSFunction>
-      OpenHandle(const Function* data);
-  static inline v8::internal::Handle<v8::internal::JSObject>
-      OpenHandle(const Message* message);
-  static inline v8::internal::Handle<v8::internal::JSArray>
-      OpenHandle(const StackTrace* stack_trace);
-  static inline v8::internal::Handle<v8::internal::JSObject>
-      OpenHandle(const StackFrame* stack_frame);
-  static inline v8::internal::Handle<v8::internal::Context>
-      OpenHandle(const v8::Context* context);
-  static inline v8::internal::Handle<v8::internal::SignatureInfo>
-      OpenHandle(const v8::Signature* sig);
-  static inline v8::internal::Handle<v8::internal::TypeSwitchInfo>
-      OpenHandle(const v8::TypeSwitch* that);
-  static inline v8::internal::Handle<v8::internal::Proxy>
-      OpenHandle(const v8::External* that);
+#define DECLARE_OPEN_HANDLE(From, To) \
+  static inline v8::internal::Handle<v8::internal::To> \
+      OpenHandle(const From* that, bool allow_empty_handle = false);
+
+OPEN_HANDLE_LIST(DECLARE_OPEN_HANDLE)
+
+#undef DECLARE_OPEN_HANDLE
 };
 
 
 template <class T>
-static inline T* ToApi(v8::internal::Handle<v8::internal::Object> obj) {
+inline T* ToApi(v8::internal::Handle<v8::internal::Object> obj) {
   return reinterpret_cast<T*>(obj.location());
 }
 
@@ -259,7 +249,7 @@ v8::internal::Handle<T> v8::internal::Handle<T>::EscapeFrom(
   if (!is_null()) {
     handle = *this;
   }
-  return Utils::OpenHandle(*scope->Close(Utils::ToLocal(handle)));
+  return Utils::OpenHandle(*scope->Close(Utils::ToLocal(handle)), true);
 }
 
 
@@ -275,12 +265,13 @@ MAKE_TO_LOCAL(ToLocal, Context, Context)
 MAKE_TO_LOCAL(ToLocal, Object, Value)
 MAKE_TO_LOCAL(ToLocal, JSFunction, Function)
 MAKE_TO_LOCAL(ToLocal, String, String)
+MAKE_TO_LOCAL(ToLocal, JSRegExp, RegExp)
 MAKE_TO_LOCAL(ToLocal, JSObject, Object)
 MAKE_TO_LOCAL(ToLocal, JSArray, Array)
-MAKE_TO_LOCAL(ToLocal, Proxy, External)
 MAKE_TO_LOCAL(ToLocal, FunctionTemplateInfo, FunctionTemplate)
 MAKE_TO_LOCAL(ToLocal, ObjectTemplateInfo, ObjectTemplate)
 MAKE_TO_LOCAL(ToLocal, SignatureInfo, Signature)
+MAKE_TO_LOCAL(AccessorSignatureToLocal, FunctionTemplateInfo, AccessorSignature)
 MAKE_TO_LOCAL(ToLocal, TypeSwitchInfo, TypeSwitch)
 MAKE_TO_LOCAL(MessageToLocal, Object, Message)
 MAKE_TO_LOCAL(StackTraceToLocal, JSArray, StackTrace)
@@ -288,76 +279,159 @@ MAKE_TO_LOCAL(StackFrameToLocal, JSObject, StackFrame)
 MAKE_TO_LOCAL(NumberToLocal, Object, Number)
 MAKE_TO_LOCAL(IntegerToLocal, Object, Integer)
 MAKE_TO_LOCAL(Uint32ToLocal, Object, Uint32)
+MAKE_TO_LOCAL(ExternalToLocal, JSObject, External)
 
 #undef MAKE_TO_LOCAL
 
 
 // Implementations of OpenHandle
 
-#define MAKE_OPEN_HANDLE(From, To) \
-  v8::internal::Handle<v8::internal::To> Utils::OpenHandle(\
-    const v8::From* that) { \
-    return v8::internal::Handle<v8::internal::To>( \
+#define MAKE_OPEN_HANDLE(From, To)                                          \
+  v8::internal::Handle<v8::internal::To> Utils::OpenHandle(                 \
+    const v8::From* that, bool allow_empty_handle) {                        \
+    EXTRA_CHECK(allow_empty_handle || that != NULL);                        \
+    return v8::internal::Handle<v8::internal::To>(                          \
         reinterpret_cast<v8::internal::To**>(const_cast<v8::From*>(that))); \
   }
 
-MAKE_OPEN_HANDLE(Template, TemplateInfo)
-MAKE_OPEN_HANDLE(FunctionTemplate, FunctionTemplateInfo)
-MAKE_OPEN_HANDLE(ObjectTemplate, ObjectTemplateInfo)
-MAKE_OPEN_HANDLE(Signature, SignatureInfo)
-MAKE_OPEN_HANDLE(TypeSwitch, TypeSwitchInfo)
-MAKE_OPEN_HANDLE(Data, Object)
-MAKE_OPEN_HANDLE(Object, JSObject)
-MAKE_OPEN_HANDLE(Array, JSArray)
-MAKE_OPEN_HANDLE(String, String)
-MAKE_OPEN_HANDLE(Script, Object)
-MAKE_OPEN_HANDLE(Function, JSFunction)
-MAKE_OPEN_HANDLE(Message, JSObject)
-MAKE_OPEN_HANDLE(Context, Context)
-MAKE_OPEN_HANDLE(External, Proxy)
-MAKE_OPEN_HANDLE(StackTrace, JSArray)
-MAKE_OPEN_HANDLE(StackFrame, JSObject)
+OPEN_HANDLE_LIST(MAKE_OPEN_HANDLE)
 
 #undef MAKE_OPEN_HANDLE
+#undef OPEN_HANDLE_LIST
 
 
 namespace internal {
 
+// Tracks string usage to help make better decisions when
+// externalizing strings.
+//
+// Implementation note: internally this class only tracks fresh
+// strings and keeps a single use counter for them.
+class StringTracker {
+ public:
+  // Records that the given string's characters were copied to some
+  // external buffer. If this happens often we should honor
+  // externalization requests for the string.
+  void RecordWrite(Handle<String> string) {
+    Address address = reinterpret_cast<Address>(*string);
+    Address top = isolate_->heap()->NewSpaceTop();
+    if (IsFreshString(address, top)) {
+      IncrementUseCount(top);
+    }
+  }
+
+  // Estimates freshness and use frequency of the given string based
+  // on how close it is to the new space top and the recorded usage
+  // history.
+  inline bool IsFreshUnusedString(Handle<String> string) {
+    Address address = reinterpret_cast<Address>(*string);
+    Address top = isolate_->heap()->NewSpaceTop();
+    return IsFreshString(address, top) && IsUseCountLow(top);
+  }
+
+ private:
+  StringTracker() : use_count_(0), last_top_(NULL), isolate_(NULL) { }
+
+  static inline bool IsFreshString(Address string, Address top) {
+    return top - kFreshnessLimit <= string && string <= top;
+  }
+
+  inline bool IsUseCountLow(Address top) {
+    if (last_top_ != top) return true;
+    return use_count_ < kUseLimit;
+  }
+
+  inline void IncrementUseCount(Address top) {
+    if (last_top_ != top) {
+      use_count_ = 0;
+      last_top_ = top;
+    }
+    ++use_count_;
+  }
+
+  // Single use counter shared by all fresh strings.
+  int use_count_;
+
+  // Last new space top when the use count above was valid.
+  Address last_top_;
+
+  Isolate* isolate_;
+
+  // How close to the new space top a fresh string has to be.
+  static const int kFreshnessLimit = 1024;
+
+  // The number of uses required to consider a string useful.
+  static const int kUseLimit = 32;
+
+  friend class Isolate;
+
+  DISALLOW_COPY_AND_ASSIGN(StringTracker);
+};
+
+
+class DeferredHandles {
+ public:
+  ~DeferredHandles();
+
+ private:
+  DeferredHandles(Object** first_block_limit, Isolate* isolate)
+      : next_(NULL),
+        previous_(NULL),
+        first_block_limit_(first_block_limit),
+        isolate_(isolate) {
+    isolate->LinkDeferredHandles(this);
+  }
+
+  void Iterate(ObjectVisitor* v);
+
+  List<Object**> blocks_;
+  DeferredHandles* next_;
+  DeferredHandles* previous_;
+  Object** first_block_limit_;
+  Isolate* isolate_;
+
+  friend class HandleScopeImplementer;
+  friend class Isolate;
+};
+
+
 // This class is here in order to be able to declare it a friend of
 // HandleScope.  Moving these methods to be members of HandleScope would be
-// neat in some ways, but it would expose external implementation details in
+// neat in some ways, but it would expose internal implementation details in
 // our public header file, which is undesirable.
 //
-// There is a singleton instance of this class to hold the per-thread data.
-// For multithreaded V8 programs this data is copied in and out of storage
+// An isolate has a single instance of this class to hold the current thread's
+// data. In multithreaded V8 programs this data is copied in and out of storage
 // so that the currently executing thread always has its own copy of this
 // data.
 class HandleScopeImplementer {
  public:
-
-  HandleScopeImplementer()
-      : blocks_(0),
+  explicit HandleScopeImplementer(Isolate* isolate)
+      : isolate_(isolate),
+        blocks_(0),
         entered_contexts_(0),
         saved_contexts_(0),
         spare_(NULL),
-        ignore_out_of_memory_(false),
-        call_depth_(0) { }
+        call_depth_(0),
+        last_handle_before_deferred_block_(NULL) { }
 
-  static HandleScopeImplementer* instance();
+  ~HandleScopeImplementer() {
+    DeleteArray(spare_);
+  }
 
   // Threading support for handle data.
   static int ArchiveSpacePerThread();
-  static char* RestoreThread(char* from);
-  static char* ArchiveThread(char* to);
-  static void FreeThreadResources();
+  char* RestoreThread(char* from);
+  char* ArchiveThread(char* to);
+  void FreeThreadResources();
 
   // Garbage collection support.
-  static void Iterate(v8::internal::ObjectVisitor* v);
+  void Iterate(v8::internal::ObjectVisitor* v);
   static char* Iterate(v8::internal::ObjectVisitor* v, char* data);
 
 
   inline internal::Object** GetSpareOrNewBlock();
-  inline void DeleteExtensions(int extensions);
+  inline void DeleteExtensions(internal::Object** prev_limit);
 
   inline void IncrementCallDepth() {call_depth_++;}
   inline void DecrementCallDepth() {call_depth_--;}
@@ -375,9 +449,12 @@ class HandleScopeImplementer {
   inline bool HasSavedContexts();
 
   inline List<internal::Object**>* blocks() { return &blocks_; }
-  inline bool ignore_out_of_memory() { return ignore_out_of_memory_; }
-  inline void set_ignore_out_of_memory(bool value) {
-    ignore_out_of_memory_ = value;
+  Isolate* isolate() const { return isolate_; }
+
+  void ReturnBlock(Object** block) {
+    ASSERT(block != NULL);
+    if (spare_ != NULL) DeleteArray(spare_);
+    spare_ = block;
   }
 
  private:
@@ -386,7 +463,7 @@ class HandleScopeImplementer {
     entered_contexts_.Initialize(0);
     saved_contexts_.Initialize(0);
     spare_ = NULL;
-    ignore_out_of_memory_ = false;
+    last_handle_before_deferred_block_ = NULL;
     call_depth_ = 0;
   }
 
@@ -404,14 +481,18 @@ class HandleScopeImplementer {
     ASSERT(call_depth_ == 0);
   }
 
+  void BeginDeferredScope();
+  DeferredHandles* Detach(Object** prev_limit);
+
+  Isolate* isolate_;
   List<internal::Object**> blocks_;
   // Used as a stack to keep track of entered contexts.
   List<Handle<Object> > entered_contexts_;
   // Used as a stack to keep track of saved contexts.
   List<Context*> saved_contexts_;
   Object** spare_;
-  bool ignore_out_of_memory_;
   int call_depth_;
+  Object** last_handle_before_deferred_block_;
   // This is only used for threading support.
   v8::ImplementationUtilities::HandleScopeData handle_scope_data_;
 
@@ -419,11 +500,14 @@ class HandleScopeImplementer {
   char* RestoreThreadHelper(char* from);
   char* ArchiveThreadHelper(char* to);
 
+  friend class DeferredHandles;
+  friend class DeferredHandleScope;
+
   DISALLOW_COPY_AND_ASSIGN(HandleScopeImplementer);
 };
 
 
-static const int kHandleBlockSize = v8::internal::KB - 2;  // fit in one page
+const int kHandleBlockSize = v8::internal::KB - 2;  // fit in one page
 
 
 void HandleScopeImplementer::SaveContext(Context* context) {
@@ -469,26 +553,41 @@ internal::Object** HandleScopeImplementer::GetSpareOrNewBlock() {
 }
 
 
-void HandleScopeImplementer::DeleteExtensions(int extensions) {
-  if (spare_ != NULL) {
-    DeleteArray(spare_);
-    spare_ = NULL;
-  }
-  for (int i = extensions; i > 1; --i) {
-    internal::Object** block = blocks_.RemoveLast();
+void HandleScopeImplementer::DeleteExtensions(internal::Object** prev_limit) {
+  while (!blocks_.is_empty()) {
+    internal::Object** block_start = blocks_.last();
+    internal::Object** block_limit = block_start + kHandleBlockSize;
 #ifdef DEBUG
-    v8::ImplementationUtilities::ZapHandleRange(block,
-                                                &block[kHandleBlockSize]);
+    // NoHandleAllocation may make the prev_limit to point inside the block.
+    if (block_start <= prev_limit && prev_limit <= block_limit) break;
+#else
+    if (prev_limit == block_limit) break;
 #endif
-    DeleteArray(block);
-  }
-  spare_ = blocks_.RemoveLast();
+
+    blocks_.RemoveLast();
 #ifdef DEBUG
-  v8::ImplementationUtilities::ZapHandleRange(
-      spare_,
-      &spare_[kHandleBlockSize]);
+    v8::ImplementationUtilities::ZapHandleRange(block_start, block_limit);
 #endif
+    if (spare_ != NULL) {
+      DeleteArray(spare_);
+    }
+    spare_ = block_start;
+  }
+  ASSERT((blocks_.is_empty() && prev_limit == NULL) ||
+         (!blocks_.is_empty() && prev_limit != NULL));
 }
+
+
+class Testing {
+ public:
+  static v8::Testing::StressType stress_type() { return stress_type_; }
+  static void set_stress_type(v8::Testing::StressType stress_type) {
+    stress_type_ = stress_type;
+  }
+
+ private:
+  static v8::Testing::StressType stress_type_;
+};
 
 } }  // namespace v8::internal
 

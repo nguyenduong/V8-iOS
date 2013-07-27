@@ -1,4 +1,4 @@
-// Copyright 2006-2008 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -29,13 +29,15 @@
 #define V8_FRAMES_INL_H_
 
 #include "frames.h"
+#include "isolate.h"
+#include "v8memory.h"
 
 #if V8_TARGET_ARCH_IA32
 #include "ia32/frames-ia32.h"
-#elif V8_TARGET_ARCH_X64
-#include "x64/frames-x64.h"
 #elif V8_TARGET_ARCH_VM
 #include "vm/frames-vm.h"
+#elif V8_TARGET_ARCH_X64
+#include "x64/frames-x64.h"
 #elif V8_TARGET_ARCH_ARM
 #include "arm/frames-arm.h"
 #elif V8_TARGET_ARCH_MIPS
@@ -66,9 +68,9 @@ inline bool StackHandler::includes(Address address) const {
 }
 
 
-inline void StackHandler::Iterate(ObjectVisitor* v) const {
-  // Stack handlers do not contain any pointers that need to be
-  // traversed.
+inline void StackHandler::Iterate(ObjectVisitor* v, Code* holder) const {
+  v->VisitPointer(context_address());
+  v->VisitPointer(code_address());
 }
 
 
@@ -77,26 +79,76 @@ inline StackHandler* StackHandler::FromAddress(Address address) {
 }
 
 
-inline StackHandler::State StackHandler::state() const {
+inline bool StackHandler::is_js_entry() const {
+  return kind() == JS_ENTRY;
+}
+
+
+inline bool StackHandler::is_catch() const {
+  return kind() == CATCH;
+}
+
+
+inline bool StackHandler::is_finally() const {
+  return kind() == FINALLY;
+}
+
+
+inline StackHandler::Kind StackHandler::kind() const {
   const int offset = StackHandlerConstants::kStateOffset;
-  return static_cast<State>(Memory::int_at(address() + offset));
+  return KindField::decode(Memory::unsigned_at(address() + offset));
 }
 
 
-inline Address StackHandler::pc() const {
-  const int offset = StackHandlerConstants::kPCOffset;
-  return Memory::Address_at(address() + offset);
+inline Object** StackHandler::context_address() const {
+  const int offset = StackHandlerConstants::kContextOffset;
+  return reinterpret_cast<Object**>(address() + offset);
 }
 
 
-inline void StackHandler::set_pc(Address value) {
-  const int offset = StackHandlerConstants::kPCOffset;
-  Memory::Address_at(address() + offset) = value;
+inline Object** StackHandler::code_address() const {
+  const int offset = StackHandlerConstants::kCodeOffset;
+  return reinterpret_cast<Object**>(address() + offset);
+}
+
+
+inline StackFrame::StackFrame(StackFrameIterator* iterator)
+    : iterator_(iterator), isolate_(iterator_->isolate()) {
 }
 
 
 inline StackHandler* StackFrame::top_handler() const {
   return iterator_->handler();
+}
+
+
+inline Code* StackFrame::LookupCode() const {
+  return GetContainingCode(isolate(), pc());
+}
+
+
+inline Code* StackFrame::GetContainingCode(Isolate* isolate, Address pc) {
+  return isolate->inner_pointer_to_code_cache()->GetCacheEntry(pc)->code;
+}
+
+
+inline EntryFrame::EntryFrame(StackFrameIterator* iterator)
+    : StackFrame(iterator) {
+}
+
+
+inline EntryConstructFrame::EntryConstructFrame(StackFrameIterator* iterator)
+    : EntryFrame(iterator) {
+}
+
+
+inline ExitFrame::ExitFrame(StackFrameIterator* iterator)
+    : StackFrame(iterator) {
+}
+
+
+inline StandardFrame::StandardFrame(StackFrameIterator* iterator)
+    : StackFrame(iterator) {
 }
 
 
@@ -141,19 +193,35 @@ inline bool StandardFrame::IsArgumentsAdaptorFrame(Address fp) {
 inline bool StandardFrame::IsConstructFrame(Address fp) {
   Object* marker =
       Memory::Object_at(fp + StandardFrameConstants::kMarkerOffset);
-  return marker == Smi::FromInt(CONSTRUCT);
+  return marker == Smi::FromInt(StackFrame::CONSTRUCT);
+}
+
+
+inline JavaScriptFrame::JavaScriptFrame(StackFrameIterator* iterator)
+    : StandardFrame(iterator) {
+}
+
+
+Address JavaScriptFrame::GetParameterSlot(int index) const {
+  int param_count = ComputeParametersCount();
+  ASSERT(-1 <= index && index < param_count);
+  int parameter_offset = (param_count - index - 1) * kPointerSize;
+  return caller_sp() + parameter_offset;
+}
+
+
+Object* JavaScriptFrame::GetParameter(int index) const {
+  return Memory::Object_at(GetParameterSlot(index));
 }
 
 
 inline Object* JavaScriptFrame::receiver() const {
-  const int offset = JavaScriptFrameConstants::kReceiverOffset;
-  return Memory::Object_at(caller_sp() + offset);
+  return GetParameter(-1);
 }
 
 
 inline void JavaScriptFrame::set_receiver(Object* value) {
-  const int offset = JavaScriptFrameConstants::kReceiverOffset;
-  Memory::Object_at(caller_sp() + offset) = value;
+  Memory::Object_at(GetParameterSlot(-1)) = value;
 }
 
 
@@ -166,6 +234,42 @@ inline Object* JavaScriptFrame::function() const {
   Object* result = function_slot_object();
   ASSERT(result->IsJSFunction());
   return result;
+}
+
+
+inline OptimizedFrame::OptimizedFrame(StackFrameIterator* iterator)
+    : JavaScriptFrame(iterator) {
+}
+
+
+inline ArgumentsAdaptorFrame::ArgumentsAdaptorFrame(
+    StackFrameIterator* iterator) : JavaScriptFrame(iterator) {
+}
+
+
+inline InternalFrame::InternalFrame(StackFrameIterator* iterator)
+    : StandardFrame(iterator) {
+}
+
+
+inline ConstructFrame::ConstructFrame(StackFrameIterator* iterator)
+    : InternalFrame(iterator) {
+}
+
+
+template<typename Iterator>
+inline JavaScriptFrameIteratorTemp<Iterator>::JavaScriptFrameIteratorTemp(
+    Isolate* isolate)
+    : iterator_(isolate) {
+  if (!done()) Advance();
+}
+
+
+template<typename Iterator>
+inline JavaScriptFrameIteratorTemp<Iterator>::JavaScriptFrameIteratorTemp(
+    Isolate* isolate, ThreadLocalTop* top)
+    : iterator_(isolate, top) {
+  if (!done()) Advance();
 }
 
 
@@ -183,11 +287,9 @@ inline JavaScriptFrame* JavaScriptFrameIteratorTemp<Iterator>::frame() const {
 
 template<typename Iterator>
 JavaScriptFrameIteratorTemp<Iterator>::JavaScriptFrameIteratorTemp(
-    StackFrame::Id id) {
-  while (!done()) {
-    Advance();
-    if (frame()->id() == id) return;
-  }
+    Isolate* isolate, StackFrame::Id id)
+    : iterator_(isolate) {
+  AdvanceToId(id);
 }
 
 
@@ -204,6 +306,15 @@ void JavaScriptFrameIteratorTemp<Iterator>::AdvanceToArgumentsFrame() {
   if (!frame()->has_adapted_arguments()) return;
   iterator_.Advance();
   ASSERT(iterator_.frame()->is_arguments_adaptor());
+}
+
+
+template<typename Iterator>
+void JavaScriptFrameIteratorTemp<Iterator>::AdvanceToId(StackFrame::Id id) {
+  while (!done()) {
+    Advance();
+    if (frame()->id() == id) return;
+  }
 }
 
 

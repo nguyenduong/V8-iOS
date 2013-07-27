@@ -1,4 +1,4 @@
-// Copyright 2007-2008 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -28,6 +28,9 @@
 #ifndef V8_COUNTERS_H_
 #define V8_COUNTERS_H_
 
+#include "../include/v8.h"
+#include "allocation.h"
+
 namespace v8 {
 namespace internal {
 
@@ -35,27 +38,27 @@ namespace internal {
 // counters for monitoring.  Counters can be looked up and
 // manipulated by name.
 
-class StatsTable : public AllStatic {
+class StatsTable {
  public:
   // Register an application-defined function where
   // counters can be looked up.
-  static void SetCounterFunction(CounterLookupCallback f) {
+  void SetCounterFunction(CounterLookupCallback f) {
     lookup_function_ = f;
   }
 
   // Register an application-defined function to create
   // a histogram for passing to the AddHistogramSample function
-  static void SetCreateHistogramFunction(CreateHistogramCallback f) {
+  void SetCreateHistogramFunction(CreateHistogramCallback f) {
     create_histogram_function_ = f;
   }
 
   // Register an application-defined function to add a sample
   // to a histogram created with CreateHistogram function
-  static void SetAddHistogramSampleFunction(AddHistogramSampleCallback f) {
+  void SetAddHistogramSampleFunction(AddHistogramSampleCallback f) {
     add_histogram_sample_function_ = f;
   }
 
-  static bool HasCounterFunction() {
+  bool HasCounterFunction() const {
     return lookup_function_ != NULL;
   }
 
@@ -65,7 +68,7 @@ class StatsTable : public AllStatic {
   // may receive a different location to store it's counter.
   // The return value must not be cached and re-used across
   // threads, although a single thread is free to cache it.
-  static int* FindLocation(const char* name) {
+  int* FindLocation(const char* name) {
     if (!lookup_function_) return NULL;
     return lookup_function_(name);
   }
@@ -75,25 +78,31 @@ class StatsTable : public AllStatic {
   // function. min and max define the expected minimum and maximum
   // sample values. buckets is the maximum number of buckets
   // that the samples will be grouped into.
-  static void* CreateHistogram(const char* name,
-                               int min,
-                               int max,
-                               size_t buckets) {
+  void* CreateHistogram(const char* name,
+                        int min,
+                        int max,
+                        size_t buckets) {
     if (!create_histogram_function_) return NULL;
     return create_histogram_function_(name, min, max, buckets);
   }
 
   // Add a sample to a histogram created with the CreateHistogram
   // function.
-  static void AddHistogramSample(void* histogram, int sample) {
+  void AddHistogramSample(void* histogram, int sample) {
     if (!add_histogram_sample_function_) return;
     return add_histogram_sample_function_(histogram, sample);
   }
 
  private:
-  static CounterLookupCallback lookup_function_;
-  static CreateHistogramCallback create_histogram_function_;
-  static AddHistogramSampleCallback add_histogram_sample_function_;
+  StatsTable();
+
+  CounterLookupCallback lookup_function_;
+  CreateHistogramCallback create_histogram_function_;
+  AddHistogramSampleCallback add_histogram_sample_function_;
+
+  friend class Isolate;
+
+  DISALLOW_COPY_AND_ASSIGN(StatsTable);
 };
 
 // StatsCounters are dynamically created values which can be tracked in
@@ -160,12 +169,14 @@ struct StatsCounter {
  protected:
   // Returns the cached address of this counter location.
   int* GetPtr() {
-    if (lookup_done_)
-      return ptr_;
+    if (lookup_done_) return ptr_;
     lookup_done_ = true;
-    ptr_ = StatsTable::FindLocation(name_);
+    ptr_ = FindLocationInStatsTable();
     return ptr_;
   }
+
+ private:
+  int* FindLocationInStatsTable() const;
 };
 
 // StatsCounterTimer t = { { L"t:foo", NULL, false }, 0, 0 };
@@ -187,12 +198,50 @@ struct StatsCounterTimer {
   }
 };
 
-// A HistogramTimer allows distributions of results to be created
-// HistogramTimer t = { L"foo", NULL, false, 0, 0 };
-struct HistogramTimer {
+// A Histogram represents a dynamically created histogram in the StatsTable.
+//
+// This class is designed to be POD initialized.  It will be registered with
+// the histogram system on first use.  For example:
+//   Histogram h = { "myhist", 0, 10000, 50, NULL, false };
+struct Histogram {
   const char* name_;
+  int min_;
+  int max_;
+  int num_buckets_;
   void* histogram_;
   bool lookup_done_;
+
+  // Add a single sample to this histogram.
+  void AddSample(int sample);
+
+  // Returns true if this histogram is enabled.
+  bool Enabled() {
+    return GetHistogram() != NULL;
+  }
+
+  // Reset the cached internal pointer.
+  void Reset() {
+    lookup_done_ = false;
+  }
+
+ protected:
+  // Returns the handle to the histogram.
+  void* GetHistogram() {
+    if (!lookup_done_) {
+      lookup_done_ = true;
+      histogram_ = CreateHistogram();
+    }
+    return histogram_;
+  }
+
+ private:
+  void* CreateHistogram() const;
+};
+
+// A HistogramTimer allows distributions of results to be created
+// HistogramTimer t = { {L"foo", 0, 10000, 50, NULL, false}, 0, 0 };
+struct HistogramTimer {
+  Histogram histogram_;
 
   int64_t start_time_;
   int64_t stop_time_;
@@ -205,17 +254,11 @@ struct HistogramTimer {
 
   // Returns true if the timer is running.
   bool Running() {
-    return (histogram_ != NULL) && (start_time_ != 0) && (stop_time_ == 0);
+    return histogram_.Enabled() && (start_time_ != 0) && (stop_time_ == 0);
   }
 
- protected:
-  // Returns the handle to the histogram.
-  void* GetHistogram() {
-    if (!lookup_done_) {
-      lookup_done_ = true;
-      histogram_ = StatsTable::CreateHistogram(name_, 0, 10000, 50);
-    }
-    return histogram_;
+  void Reset() {
+    histogram_.Reset();
   }
 };
 

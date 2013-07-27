@@ -1,4 +1,4 @@
-// Copyright 2009 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -29,41 +29,97 @@
 // own but contains the parts which are the same across POSIX platforms Linux,
 // Mac OS, FreeBSD and OpenBSD.
 
+#include "platform-posix.h"
+
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
 
+#include <sys/mman.h>
 #include <sys/socket.h>
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
-#if defined(ANDROID)
+#undef MAP_TYPE
+
+#if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
 #define LOG_TAG "v8"
-//DuongNT modified
-//#include <utils/Log.h>  // LOG_PRI_VA
-#define ANDROID_LOG_INFO "log info"
-#define ANDROID_LOG_ERROR "log error"
-#ifndef LOG_PRI_VA
-#define LOG_PRI_VA(a, b, c, d) printf(a, b, c, d)
+#include <android/log.h>
 #endif
-#endif
-/*
-#if defined(ANDROID)
-#define LOG_TAG "v8"
-#include <utils/Log.h>  // LOG_PRI_VA
-#endif
-*/
+
 #include "v8.h"
 
+#include "codegen.h"
 #include "platform.h"
 
 namespace v8 {
 namespace internal {
+
+
+// Maximum size of the virtual memory.  0 means there is no artificial
+// limit.
+
+intptr_t OS::MaxVirtualMemory() {
+  struct rlimit limit;
+  int result = getrlimit(RLIMIT_DATA, &limit);
+  if (result != 0) return 0;
+  return limit.rlim_cur;
+}
+
+
+intptr_t OS::CommitPageSize() {
+  static intptr_t page_size = getpagesize();
+  return page_size;
+}
+
+
+#ifndef __CYGWIN__
+// Get rid of writable permission on code allocations.
+void OS::ProtectCode(void* address, const size_t size) {
+  mprotect(address, size, PROT_READ | PROT_EXEC);
+}
+
+
+// Create guard pages.
+void OS::Guard(void* address, const size_t size) {
+  mprotect(address, size, PROT_NONE);
+}
+#endif  // __CYGWIN__
+
+
+void* OS::GetRandomMmapAddr() {
+  Isolate* isolate = Isolate::UncheckedCurrent();
+  // Note that the current isolate isn't set up in a call path via
+  // CpuFeatures::Probe. We don't care about randomization in this case because
+  // the code page is immediately freed.
+  if (isolate != NULL) {
+#ifdef V8_TARGET_ARCH_X64
+    uint64_t rnd1 = V8::RandomPrivate(isolate);
+    uint64_t rnd2 = V8::RandomPrivate(isolate);
+    uint64_t raw_addr = (rnd1 << 32) ^ rnd2;
+    // Currently available CPUs have 48 bits of virtual addressing.  Truncate
+    // the hint address to 46 bits to give the kernel a fighting chance of
+    // fulfilling our placement request.
+    raw_addr &= V8_UINT64_C(0x3ffffffff000);
+#else
+    uint32_t raw_addr = V8::RandomPrivate(isolate);
+    // The range 0x20000000 - 0x60000000 is relatively unpopulated across a
+    // variety of ASLR modes (PAE kernel, NX compat mode, etc) and on macos
+    // 10.6 and 10.7.
+    raw_addr &= 0x3ffff000;
+    raw_addr += 0x20000000;
+#endif
+    return reinterpret_cast<void*>(raw_addr);
+  }
+  return NULL;
+}
+
 
 // ----------------------------------------------------------------------------
 // Math functions
@@ -73,9 +129,40 @@ double modulo(double x, double y) {
 }
 
 
+#define UNARY_MATH_FUNCTION(name, generator)             \
+static UnaryMathFunction fast_##name##_function = NULL;  \
+void init_fast_##name##_function() {                     \
+  fast_##name##_function = generator;                    \
+}                                                        \
+double fast_##name(double x) {                           \
+  return (*fast_##name##_function)(x);                   \
+}
+
+UNARY_MATH_FUNCTION(sin, CreateTranscendentalFunction(TranscendentalCache::SIN))
+UNARY_MATH_FUNCTION(cos, CreateTranscendentalFunction(TranscendentalCache::COS))
+UNARY_MATH_FUNCTION(tan, CreateTranscendentalFunction(TranscendentalCache::TAN))
+UNARY_MATH_FUNCTION(log, CreateTranscendentalFunction(TranscendentalCache::LOG))
+UNARY_MATH_FUNCTION(exp, CreateExpFunction())
+UNARY_MATH_FUNCTION(sqrt, CreateSqrtFunction())
+
+#undef MATH_FUNCTION
+
+
+void lazily_initialize_fast_exp() {
+  if (fast_exp_function == NULL) {
+    init_fast_exp_function();
+  }
+}
+
+
 double OS::nan_value() {
   // NAN from math.h is defined in C99 and not in POSIX.
   return NAN;
+}
+
+
+int OS::GetCurrentProcessId() {
+  return static_cast<int>(getpid());
 }
 
 
@@ -119,16 +206,38 @@ double OS::DaylightSavingsOffset(double time) {
 }
 
 
+int OS::GetLastError() {
+  return errno;
+}
+
+
 // ----------------------------------------------------------------------------
 // POSIX stdio support.
 //
 
 FILE* OS::FOpen(const char* path, const char* mode) {
-  return fopen(path, mode);
+  FILE* file = fopen(path, mode);
+  if (file == NULL) return NULL;
+  struct stat file_stat;
+  if (fstat(fileno(file), &file_stat) != 0) return NULL;
+  bool is_regular_file = ((file_stat.st_mode & S_IFREG) != 0);
+  if (is_regular_file) return file;
+  fclose(file);
+  return NULL;
 }
 
 
-const char* OS::LogFileOpenMode = "w";
+bool OS::Remove(const char* path) {
+  return (remove(path) == 0);
+}
+
+
+FILE* OS::OpenTemporaryFile() {
+  return tmpfile();
+}
+
+
+const char* const OS::LogFileOpenMode = "w";
 
 
 void OS::Print(const char* format, ...) {
@@ -140,10 +249,27 @@ void OS::Print(const char* format, ...) {
 
 
 void OS::VPrint(const char* format, va_list args) {
-#if defined(ANDROID)
-  LOG_PRI_VA(ANDROID_LOG_INFO, LOG_TAG, format, args);
+#if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
+  __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
 #else
   vprintf(format, args);
+#endif
+}
+
+
+void OS::FPrint(FILE* out, const char* format, ...) {
+  va_list args;
+  va_start(args, format);
+  VFPrint(out, format, args);
+  va_end(args);
+}
+
+
+void OS::VFPrint(FILE* out, const char* format, va_list args) {
+#if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
+  __android_log_vprint(ANDROID_LOG_INFO, LOG_TAG, format, args);
+#else
+  vfprintf(out, format, args);
 #endif
 }
 
@@ -157,8 +283,8 @@ void OS::PrintError(const char* format, ...) {
 
 
 void OS::VPrintError(const char* format, va_list args) {
-#if defined(ANDROID)
-  LOG_PRI_VA(ANDROID_LOG_ERROR, LOG_TAG, format, args);
+#if defined(ANDROID) && !defined(V8_ANDROID_LOG_STDOUT)
+  __android_log_vprint(ANDROID_LOG_ERROR, LOG_TAG, format, args);
 #else
   vfprintf(stderr, format, args);
 #endif
@@ -179,13 +305,46 @@ int OS::VSNPrintF(Vector<char> str,
                   va_list args) {
   int n = vsnprintf(str.start(), str.length(), format, args);
   if (n < 0 || n >= str.length()) {
-    str[str.length() - 1] = '\0';
+    // If the length is zero, the assignment fails.
+    if (str.length() > 0)
+      str[str.length() - 1] = '\0';
     return -1;
   } else {
     return n;
   }
 }
 
+
+#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_VM)
+//static OS::MemCopyFunction memcopy_function = NULL;
+// Defined in codegen-ia32.cc.
+OS::MemCopyFunction CreateMemCopyFunction();
+
+// Copy memory area to disjoint memory area.
+void OS::MemCopy(void* dest, const void* src, size_t size) {
+  // Note: here we rely on dependent reads being ordered. This is true
+  // on all architectures we currently support.
+//  (*memcopy_function)(dest, src, size);
+//DuongNT fixed
+    memcpy(dest, src, size);
+#ifdef DEBUG
+  CHECK_EQ(0, memcmp(dest, src, size));
+#endif
+}
+#endif  // V8_TARGET_ARCH_IA32
+
+
+void POSIXPostSetUp() {
+#if defined(V8_TARGET_ARCH_IA32) || defined(V8_TARGET_ARCH_VM)
+  //memcopy_function = CreateMemCopyFunction();
+#endif
+  init_fast_sin_function();
+  init_fast_cos_function();
+  init_fast_tan_function();
+  init_fast_log_function();
+  // fast_exp is initialized lazily.
+  init_fast_sqrt_function();
+}
 
 // ----------------------------------------------------------------------------
 // POSIX string support.
@@ -210,6 +369,14 @@ class POSIXSocket : public Socket {
   explicit POSIXSocket() {
     // Create the socket.
     socket_ = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (IsValid()) {
+      // Allow rapid reuse.
+      static const int kOn = 1;
+      int ret = setsockopt(socket_, SOL_SOCKET, SO_REUSEADDR,
+                           &kOn, sizeof(kOn));
+      ASSERT(ret == 0);
+      USE(ret);
+    }
   }
   explicit POSIXSocket(int socket): socket_(socket) { }
   virtual ~POSIXSocket() { Shutdown(); }
@@ -249,7 +416,7 @@ bool POSIXSocket::Bind(const int port) {
   addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   addr.sin_port = htons(port);
   int status = bind(socket_,
-                    reinterpret_cast<struct sockaddr *>(&addr),
+                    BitCast<struct sockaddr *>(&addr),
                     sizeof(addr));
   return status == 0;
 }
@@ -270,7 +437,11 @@ Socket* POSIXSocket::Accept() const {
     return NULL;
   }
 
-  int socket = accept(socket_, NULL, NULL);
+  int socket;
+  do {
+    socket = accept(socket_, NULL, NULL);
+  } while (socket == -1 && errno == EINTR);
+
   if (socket == -1) {
     return NULL;
   } else {
@@ -297,7 +468,9 @@ bool POSIXSocket::Connect(const char* host, const char* port) {
   }
 
   // Connect.
-  status = connect(socket_, result->ai_addr, result->ai_addrlen);
+  do {
+    status = connect(socket_, result->ai_addr, result->ai_addrlen);
+  } while (status == -1 && errno == EINTR);
   freeaddrinfo(result);
   return status == 0;
 }
@@ -316,14 +489,29 @@ bool POSIXSocket::Shutdown() {
 
 
 int POSIXSocket::Send(const char* data, int len) const {
-  int status = send(socket_, data, len, 0);
-  return status;
+  if (len <= 0) return 0;
+  int written = 0;
+  while (written < len) {
+    int status = send(socket_, data + written, len - written, 0);
+    if (status == 0) {
+      break;
+    } else if (status > 0) {
+      written += status;
+    } else if (errno != EINTR) {
+      return 0;
+    }
+  }
+  return written;
 }
 
 
 int POSIXSocket::Receive(char* data, int len) const {
-  int status = recv(socket_, data, len, 0);
-  return status;
+  if (len <= 0) return 0;
+  int status;
+  do {
+    status = recv(socket_, data, len, 0);
+  } while (status == -1 && errno == EINTR);
+  return (status < 0) ? 0 : status;
 }
 
 
@@ -334,7 +522,7 @@ bool POSIXSocket::SetReuseAddress(bool reuse_address) {
 }
 
 
-bool Socket::Setup() {
+bool Socket::SetUp() {
   // Nothing to do on POSIX.
   return true;
 }

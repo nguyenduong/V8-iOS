@@ -27,8 +27,6 @@
 #ifndef V8_FLAGS_H_
 #define V8_FLAGS_H_
 
-#include "checks.h"
-
 namespace v8 {
 namespace internal {
 
@@ -74,6 +72,9 @@ class FlagList {
 
   // Print help to stdout with flags, types, and default values.
   static void PrintHelp();
+
+  // Set flags as consequence of being implied by another flag.
+  static void EnforceFlagImplications();
 };
 
 } }  // namespace v8::internal

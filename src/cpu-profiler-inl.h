@@ -30,9 +30,7 @@
 
 #include "cpu-profiler.h"
 
-#ifdef ENABLE_LOGGING_AND_PROFILING
-
-#include "circular-queue-inl.h"
+#include <new>
 #include "profile-generator-inl.h"
 #include "unbound-queue-inl.h"
 
@@ -41,6 +39,9 @@ namespace internal {
 
 void CodeCreateEventRecord::UpdateCodeMap(CodeMap* code_map) {
   code_map->AddCode(start, entry, size);
+  if (shared != NULL) {
+    entry->set_shared_id(code_map->GetSharedId(shared));
+  }
 }
 
 
@@ -49,52 +50,36 @@ void CodeMoveEventRecord::UpdateCodeMap(CodeMap* code_map) {
 }
 
 
-void CodeDeleteEventRecord::UpdateCodeMap(CodeMap* code_map) {
-  code_map->DeleteCode(start);
+void SharedFunctionInfoMoveEventRecord::UpdateCodeMap(CodeMap* code_map) {
+  code_map->MoveCode(from, to);
 }
 
 
-void CodeAliasEventRecord::UpdateCodeMap(CodeMap* code_map) {
-  code_map->AddAlias(start, entry, code_start);
-}
-
-
-TickSampleEventRecord* TickSampleEventRecord::init(void* value) {
-  TickSampleEventRecord* result =
-      reinterpret_cast<TickSampleEventRecord*>(value);
-  result->filler = 1;
-  ASSERT(result->filler != SamplingCircularQueue::kClear);
-  // Init the required fields only.
-  result->sample.pc = NULL;
-  result->sample.frames_count = 0;
-  return result;
-}
-
-
-TickSample* ProfilerEventsProcessor::TickSampleEvent() {
+TickSample* ProfilerEventsProcessor::StartTickSampleEvent() {
+  if (!ticks_buffer_is_empty_ || ticks_buffer_is_initialized_) return NULL;
+  ticks_buffer_is_initialized_ = true;
   generator_->Tick();
-  TickSampleEventRecord* evt =
-      TickSampleEventRecord::init(ticks_buffer_.Enqueue());
-  evt->order = enqueue_order_;  // No increment!
-  return &evt->sample;
+  ticks_buffer_ = TickSampleEventRecord(enqueue_order_);
+  return &ticks_buffer_.sample;
+}
+
+
+void ProfilerEventsProcessor::FinishTickSampleEvent() {
+  ASSERT(ticks_buffer_is_initialized_ && ticks_buffer_is_empty_);
+  ticks_buffer_is_empty_ = false;
 }
 
 
 bool ProfilerEventsProcessor::FilterOutCodeCreateEvent(
     Logger::LogEventsAndTags tag) {
-  // In browser mode, leave only callbacks and non-native JS entries.
-  // We filter out regular expressions as currently we can't tell
-  // whether they origin from native scripts, so let's not confise people by
-  // showing them weird regexes they didn't wrote.
   return FLAG_prof_browser_mode
       && (tag != Logger::CALLBACK_TAG
           && tag != Logger::FUNCTION_TAG
           && tag != Logger::LAZY_COMPILE_TAG
+          && tag != Logger::REG_EXP_TAG
           && tag != Logger::SCRIPT_TAG);
 }
 
 } }  // namespace v8::internal
-
-#endif  // ENABLE_LOGGING_AND_PROFILING
 
 #endif  // V8_CPU_PROFILER_INL_H_

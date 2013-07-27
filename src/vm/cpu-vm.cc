@@ -1,4 +1,4 @@
-// Copyright 2006-2008 the V8 project authors. All rights reserved.
+// Copyright 2011 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -25,7 +25,7 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// CPU specific code for ia32 independent of OS goes here.
+// CPU specific code for vm independent of OS goes here.
 
 #ifdef __GNUC__
 #include "third_party/valgrind/valgrind.h"
@@ -37,12 +37,18 @@
 
 #include "cpu.h"
 #include "macro-assembler.h"
+#include "simulator.h"  // for cache flushing.
 
 namespace v8 {
 namespace internal {
 
-void CPU::Setup() {
+void CPU::SetUp() {
   CpuFeatures::Probe();
+}
+
+
+bool CPU::SupportsCrankshaft() {
+  return CpuFeatures::IsSupported(SSE2);
 }
 
 
@@ -61,8 +67,15 @@ void CPU::FlushICache(void* start, size_t size) {
   // instability when code patches or moves are sometimes unnoticed.  One
   // solution is to run valgrind with --smc-check=all, but this comes at a big
   // performance cost.  We can notify valgrind to invalidate its cache.
+    if (size == 0) {
+        return;
+    }
+#ifdef USING_SIMULATOR
+	Simulator::FlushICache(Isolate::Current()->simulator_i_cache(), start, size);
+#endif
 #ifdef VALGRIND_DISCARD_TRANSLATIONS
-  VALGRIND_DISCARD_TRANSLATIONS(start, size);
+  unsigned res = VALGRIND_DISCARD_TRANSLATIONS(start, size);
+  USE(res);
 #endif
 }
 
@@ -73,10 +86,12 @@ void CPU::DebugBreak() {
   // instead
   // __asm { int 3 }
   __debugbreak();
-#elif BUILD_FOR_IOS_SIMULATOR
-  asm("int $3");
 #else
-  asm volatile ("bkpt 0");
+#ifdef IOS_DEVICE
+    asm("bkpt 0");
+#else
+    asm("int $3");
+#endif
 #endif
 }
 

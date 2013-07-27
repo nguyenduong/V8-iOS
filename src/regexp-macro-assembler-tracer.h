@@ -43,9 +43,9 @@ class RegExpMacroAssemblerTracer: public RegExpMacroAssembler {
   virtual void Backtrack();
   virtual void Bind(Label* label);
   virtual void CheckAtStart(Label* on_at_start);
-  virtual void CheckCharacter(uint32_t c, Label* on_equal);
-  virtual void CheckCharacterAfterAnd(uint32_t c,
-                                      uint32_t and_with,
+  virtual void CheckCharacter(unsigned c, Label* on_equal);
+  virtual void CheckCharacterAfterAnd(unsigned c,
+                                      unsigned and_with,
                                       Label* on_equal);
   virtual void CheckCharacterGT(uc16 limit, Label* on_greater);
   virtual void CheckCharacterLT(uc16 limit, Label* on_less);
@@ -59,19 +59,25 @@ class RegExpMacroAssemblerTracer: public RegExpMacroAssembler {
   virtual void CheckNotBackReference(int start_reg, Label* on_no_match);
   virtual void CheckNotBackReferenceIgnoreCase(int start_reg,
                                                Label* on_no_match);
-  virtual void CheckNotRegistersEqual(int reg1, int reg2, Label* on_not_equal);
-  virtual void CheckNotCharacter(uint32_t c, Label* on_not_equal);
-  virtual void CheckNotCharacterAfterAnd(uint32_t c,
-                                         uint32_t and_with,
+  virtual void CheckNotCharacter(unsigned c, Label* on_not_equal);
+  virtual void CheckNotCharacterAfterAnd(unsigned c,
+                                         unsigned and_with,
                                          Label* on_not_equal);
   virtual void CheckNotCharacterAfterMinusAnd(uc16 c,
                                               uc16 minus,
                                               uc16 and_with,
                                               Label* on_not_equal);
+  virtual void CheckCharacterInRange(uc16 from,
+                                     uc16 to,
+                                     Label* on_in_range);
+  virtual void CheckCharacterNotInRange(uc16 from,
+                                        uc16 to,
+                                        Label* on_not_in_range);
+  virtual void CheckBitInTable(Handle<ByteArray> table, Label* on_bit_set);
   virtual bool CheckSpecialCharacterClass(uc16 type,
                                           Label* on_no_match);
   virtual void Fail();
-  virtual Handle<Object> GetCode(Handle<String> source);
+  virtual Handle<HeapObject> GetCode(Handle<String> source);
   virtual void GoTo(Label* label);
   virtual void IfRegisterGE(int reg, int comparand, Label* if_ge);
   virtual void IfRegisterLT(int reg, int comparand, Label* if_lt);
@@ -89,11 +95,13 @@ class RegExpMacroAssemblerTracer: public RegExpMacroAssembler {
                             StackCheckFlag check_stack_limit);
   virtual void ReadCurrentPositionFromRegister(int reg);
   virtual void ReadStackPointerFromRegister(int reg);
+  virtual void SetCurrentPositionFromEnd(int by);
   virtual void SetRegister(int register_index, int to);
-  virtual void Succeed();
+  virtual bool Succeed();
   virtual void WriteCurrentPositionToRegister(int reg, int cp_offset);
   virtual void ClearRegisters(int reg_from, int reg_to);
   virtual void WriteStackPointerToRegister(int reg);
+
  private:
   RegExpMacroAssembler* assembler_;
 };

@@ -1,4 +1,4 @@
-// Copyright 2008-2009 the V8 project authors. All rights reserved.
+// Copyright 2011 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -33,12 +33,12 @@ namespace v8 {
 namespace internal {
 
 
-static const int BYTECODE_MASK = 0xff;
+const int BYTECODE_MASK = 0xff;
 // The first argument is packed in with the byte code in one word, but so it
 // has 24 bits, but it can be positive and negative so only use 23 bits for
 // positive values.
-static const unsigned int MAX_FIRST_ARG = 0x7fffffu;
-static const int BYTECODE_SHIFT = 8;
+const unsigned int MAX_FIRST_ARG = 0x7fffffu;
+const int BYTECODE_SHIFT = 8;
 
 #define BYTECODE_ITERATOR(V)                                                   \
 V(BREAK,              0, 4)   /* bc8                                        */ \
@@ -72,23 +72,23 @@ V(AND_CHECK_4_CHARS, 27, 16)  /* bc8 pad24 uint32 uint32 addr32             */ \
 V(AND_CHECK_CHAR,    28, 12)  /* bc8 pad8 uint16 uint32 addr32              */ \
 V(AND_CHECK_NOT_4_CHARS, 29, 16) /* bc8 pad24 uint32 uint32 addr32          */ \
 V(AND_CHECK_NOT_CHAR, 30, 12) /* bc8 pad8 uint16 uint32 addr32              */ \
-V(MINUS_AND_CHECK_NOT_CHAR, 31, 12) /* bc8 pad8 uc16 uc16 addr32            */ \
-V(CHECK_LT,          32, 8)   /* bc8 pad8 uc16 addr32                       */ \
-V(CHECK_GT,          33, 8)   /* bc8 pad8 uc16 addr32                       */ \
-V(CHECK_NOT_BACK_REF, 34, 8)  /* bc8 reg_idx24 addr32                       */ \
-V(CHECK_NOT_BACK_REF_NO_CASE, 35, 8) /* bc8 reg_idx24 addr32                */ \
-V(CHECK_NOT_REGS_EQUAL, 36, 12) /* bc8 regidx24 reg_idx32 addr32            */ \
-V(LOOKUP_MAP1,       37, 12)  /* bc8 pad8 start16 bit_map_addr32 addr32     */ \
-V(LOOKUP_MAP2,       38, 96)  /* bc8 pad8 start16 half_nibble_map_addr32*   */ \
-V(LOOKUP_MAP8,       39, 96)  /* bc8 pad8  start16 byte_map addr32*         */ \
-V(LOOKUP_HI_MAP8,    40, 96)  /* bc8 start24 byte_map_addr32 addr32*        */ \
-V(CHECK_REGISTER_LT, 41, 12)  /* bc8 reg_idx24 value32 addr32               */ \
-V(CHECK_REGISTER_GE, 42, 12)  /* bc8 reg_idx24 value32 addr32               */ \
-V(CHECK_REGISTER_EQ_POS, 43, 8) /* bc8 reg_idx24 addr32                     */ \
-V(CHECK_AT_START,    44, 8)   /* bc8 pad24 addr32                           */ \
-V(CHECK_NOT_AT_START, 45, 8)  /* bc8 pad24 addr32                           */ \
-V(CHECK_GREEDY,      46, 8)   /* bc8 pad24 addr32                           */ \
-V(ADVANCE_CP_AND_GOTO, 47, 8) /* bc8 offset24 addr32                        */
+V(MINUS_AND_CHECK_NOT_CHAR, 31, 12) /* bc8 pad8 uc16 uc16 uc16 addr32       */ \
+V(CHECK_CHAR_IN_RANGE, 32, 12) /* bc8 pad24 uc16 uc16 addr32                */ \
+V(CHECK_CHAR_NOT_IN_RANGE, 33, 12) /* bc8 pad24 uc16 uc16 addr32            */ \
+V(CHECK_BIT_IN_TABLE, 34, 24) /* bc8 pad24 addr32 bits128                   */ \
+V(CHECK_LT,          35, 8)   /* bc8 pad8 uc16 addr32                       */ \
+V(CHECK_GT,          36, 8)   /* bc8 pad8 uc16 addr32                       */ \
+V(CHECK_NOT_BACK_REF, 37, 8)  /* bc8 reg_idx24 addr32                       */ \
+V(CHECK_NOT_BACK_REF_NO_CASE, 38, 8) /* bc8 reg_idx24 addr32                */ \
+V(CHECK_NOT_REGS_EQUAL, 39, 12) /* bc8 regidx24 reg_idx32 addr32            */ \
+V(CHECK_REGISTER_LT, 40, 12)  /* bc8 reg_idx24 value32 addr32               */ \
+V(CHECK_REGISTER_GE, 41, 12)  /* bc8 reg_idx24 value32 addr32               */ \
+V(CHECK_REGISTER_EQ_POS, 42, 8) /* bc8 reg_idx24 addr32                     */ \
+V(CHECK_AT_START,    43, 8)   /* bc8 pad24 addr32                           */ \
+V(CHECK_NOT_AT_START, 44, 8)  /* bc8 pad24 addr32                           */ \
+V(CHECK_GREEDY,      45, 8)   /* bc8 pad24 addr32                           */ \
+V(ADVANCE_CP_AND_GOTO, 46, 8) /* bc8 offset24 addr32                        */ \
+V(SET_CURRENT_POSITION_FROM_END, 47, 4) /* bc8 idx24                        */
 
 #define DECLARE_BYTECODES(name, code, length) \
   static const int BC_##name = code;

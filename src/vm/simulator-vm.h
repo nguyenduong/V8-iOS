@@ -1,4 +1,4 @@
-// Copyright 2008 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -25,14 +25,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-/*
-
-// Call the generated regexp code directly. The entry function pointer should
-// expect eight int/pointer sized arguments and return an int.
-#define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6) \
-  entry(p0, p1, p2, p3, p4, p5, p6)
-*/
-
 #ifndef V8_VM_SIMULATOR_VM_H_
 #define V8_VM_SIMULATOR_VM_H_
 
@@ -42,7 +34,6 @@
 
 #include "allocation.h"
 
-#define USE_OPTIMIZED_INSTRUCTIONS
 namespace v8 {
 namespace internal {
 
@@ -53,25 +44,27 @@ namespace internal {
 // Since there is no simulator for the vm architecture the only thing we can
 // do is to call the entry directly.
 #ifdef USING_SIMULATOR
-	#define CALL_GENERATED_CODE(entry, p0, p1, p2, p3, p4) ((Object*)execute_code((void*)entry, (unsigned char*)p0, (void*)p1, (void*)p2, (int)p3, (void***)p4))
+	#define CALL_GENERATED_CODE(entry, p0, p1, p2, p3, p4) ((MaybeObject*)execute_code((void*)entry, (unsigned char*)p0, (void*)p1, (void*)p2, (int)p3, (void***)p4))
 	
+	//#define CALL_GENERATED_CODE(entry, p0, p1, p2, p3, p4) (entry(p0, p1, p2, p3, p4))
 #else
 #define CALL_GENERATED_CODE(entry, p0, p1, p2, p3, p4) \
-		entry(p0, p1, p2, p3, p4);
+  (entry(p0, p1, p2, p3, p4))
 #endif
 
-//typedef int (*regexp_matcher)(String*, int, const byte*,
-//                              const byte*, int*, int, Address, int, Isolate*);
-
-// Call the generated regexp code directly. The code at the entry address should
-// expect eight int/pointer sized arguments and return an int.
+typedef int (*regexp_matcher)(String*, int, const byte*,
+                              const byte*, int*, int, Address, int, Isolate*);
 
 #ifdef USING_SIMULATOR
-	#define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6) ((int)execute_regexp_code((void*)entry, (void*)p0, p1, (void*)p2, (void*)p3, (void*)p4, (void*)p5, p6))
+#define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6, p7, p8) ((int)execute_regexp_code((void*)entry, (void*)p0, p1, (void*)p2, (void*)p3, (void*)p4, p5, (void*)p6, p7, (void*)p8))
+
+//#define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6, p7, p8) (FUNCTION_CAST<regexp_matcher>(entry)(p0, p1, p2, p3, p4, p5, p6, p7, p8))
 
 #else
-#define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6) \
-  entry(p0, p1, p2, p3, p4, p5, p6)
+// Call the generated regexp code directly. The code at the entry address should
+// expect eight int/pointer sized arguments and return an int.
+#define CALL_GENERATED_REGEXP_CODE(entry, p0, p1, p2, p3, p4, p5, p6, p7, p8) \
+  (FUNCTION_CAST<regexp_matcher>(entry)(p0, p1, p2, p3, p4, p5, p6, p7, p8))
 #endif
 
 #define TRY_CATCH_FROM_ADDRESS(try_catch_address) \
@@ -82,15 +75,53 @@ namespace internal {
 // just use the C stack limit.
 
 
+class CachePage {
+ public:
+  static const int LINE_VALID = 0;
+  static const int LINE_INVALID = 1;
+
+  static const int kPageShift = 12;
+  static const int kPageSize = 1 << kPageShift;
+  static const int kPageMask = kPageSize - 1;
+  static const int kLineShift = 2;  // The cache line is only 4 bytes right now.
+  static const int kLineLength = 1 << kLineShift;
+  static const int kLineMask = kLineLength - 1;
+
+  CachePage() {
+    memset(&validity_map_, LINE_INVALID, sizeof(validity_map_));
+  }
+
+  char* ValidityByte(int offset) {
+    return &validity_map_[offset >> kLineShift];
+  }
+
+  char* CachedData(int offset) {
+    return &data_[offset];
+  }
+
+ private:
+  char data_[kPageSize];   // The cached data.
+  static const int kValidityMapSize = kPageSize >> kLineShift;
+  char validity_map_[kValidityMapSize];  // One byte per line.
+  
+};
+
 class Simulator : public Interpreter
 {
 public:
-	Simulator();
+	Simulator(Isolate* isolate);
 	virtual ~Simulator();
-	static Simulator* current();
-	static void Initialize();
+	static Simulator* current(v8::internal::Isolate* isolate);
+	static void Initialize(Isolate* isolate);
 	virtual bool callBuiltinFunction(unsigned int adr);
-
+	 // ICache.
+	static void CheckICache(v8::internal::HashMap* i_cache, unsigned char* instr);
+	static void FlushOnePage(v8::internal::HashMap* i_cache, intptr_t start,
+                           int size);
+	static CachePage* GetCachePage(v8::internal::HashMap* i_cache, void* page);
+	  // ICache checking.
+	static void FlushICache(v8::internal::HashMap* i_cache, void* start,
+                          size_t size);
 	// Accessor to the internal simulator stack area.
 	uintptr_t StackLimit() const;
 	// Push an address onto the JS stack.
@@ -104,32 +135,35 @@ public:
 	}
 protected:
 	virtual void checkInlineCache();
-	virtual void* getExternalFunction(unsigned int adr);
-private:	    
-	static bool initialized_;
-	static void* RedirectExternalReference(void* external_function, bool fp_return);
+private:
+	v8::internal::Isolate* mIsolate;
+	static void* RedirectExternalReference(void* external_function, v8::internal::ExternalReference::Type type);
+	// Icache simulation
+    v8::internal::HashMap* i_cache_;
 };
 
 #ifdef USING_SIMULATOR
 class SimulatorStack : public v8::internal::AllStatic {
  public:
-  static inline uintptr_t JsLimitFromCLimit(uintptr_t c_limit) {
-    return Simulator::current()->StackLimit();
+  static inline uintptr_t JsLimitFromCLimit(v8::internal::Isolate* isolate,
+                                            uintptr_t c_limit) {
+    return Simulator::current(isolate)->StackLimit();
   }
 
   static inline uintptr_t RegisterCTryCatch(uintptr_t try_catch_address) {
-    Simulator* sim = Simulator::current();
+    Simulator* sim = Simulator::current(Isolate::Current());
     return sim->PushAddress(try_catch_address);
   }
 
   static inline void UnregisterCTryCatch() {
-    Simulator::current()->PopAddress();
+    Simulator::current(Isolate::Current())->PopAddress();
   }
 };
 #else
 class SimulatorStack : public v8::internal::AllStatic {
  public:
-  static inline uintptr_t JsLimitFromCLimit(uintptr_t c_limit) {
+  static inline uintptr_t JsLimitFromCLimit(Isolate* isolate,
+                                            uintptr_t c_limit) {
     USE(isolate);
     return c_limit;
   }
@@ -149,8 +183,10 @@ int execute_regexp_code(void* matcher_func,
 						  void* input_start,
                           void* input_end,
                           void* output,
+						  int	output_size,
                           void* stack_base,						  
-                          int   direct_call);
+                          int   direct_call,
+						  void*   isolate);
 
 
 #endif

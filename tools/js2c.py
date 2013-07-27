@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2006-2008 the V8 project authors. All rights reserved.
+# Copyright 2012 the V8 project authors. All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
@@ -33,15 +33,22 @@
 
 import os, re, sys, string
 import jsmin
+import bz2
 
 
-def ToCArray(lines):
+def ToCAsciiArray(lines):
   result = []
   for chr in lines:
     value = ord(chr)
     assert value < 128
     result.append(str(value))
-  result.append("0")
+  return ", ".join(result)
+
+
+def ToCArray(lines):
+  result = []
+  for chr in lines:
+    result.append(str(ord(chr)))
   return ", ".join(result)
 
 
@@ -87,8 +94,8 @@ def ParseValue(string):
     return string
 
 
-EVAL_PATTERN = re.compile(r'\beval\s*\(');
-WITH_PATTERN = re.compile(r'\bwith\s*\(');
+EVAL_PATTERN = re.compile(r'\beval\s*\(')
+WITH_PATTERN = re.compile(r'\bwith\s*\(')
 
 
 def Validate(lines, file):
@@ -104,26 +111,30 @@ def Validate(lines, file):
 
 
 def ExpandConstants(lines, constants):
-  for key, value in constants.items():
-    lines = lines.replace(key, str(value))
+  for key, value in constants:
+    lines = key.sub(str(value), lines)
   return lines
 
 
 def ExpandMacros(lines, macros):
-  for name, macro in macros.items():
-    start = lines.find(name + '(', 0)
-    while start != -1:
+  # We allow macros to depend on the previously declared macros, but
+  # we don't allow self-dependecies or recursion.
+  for name_pattern, macro in reversed(macros):
+    pattern_match = name_pattern.search(lines, 0)
+    while pattern_match is not None:
       # Scan over the arguments
-      assert lines[start + len(name)] == '('
       height = 1
-      end = start + len(name) + 1
+      start = pattern_match.start()
+      end = pattern_match.end()
+      assert lines[end - 1] == '('
       last_match = end
-      arg_index = 0
+      arg_index = [0]  # Wrap state into array, to work around Python "scoping"
       mapping = { }
       def add_arg(str):
         # Remember to expand recursively in the arguments
         replacement = ExpandMacros(str.strip(), macros)
-        mapping[macro.args[arg_index]] = replacement
+        mapping[macro.args[arg_index[0]]] = replacement
+        arg_index[0] += 1
       while end < len(lines) and height > 0:
         # We don't count commas at higher nesting levels.
         if lines[end] == ',' and height == 1:
@@ -139,7 +150,7 @@ def ExpandMacros(lines, macros):
       result = macro.expand(mapping)
       # Replace the occurrence of the macro with the expansion
       lines = lines[:start] + result + lines[end:]
-      start = lines.find(name + '(', end)
+      pattern_match = name_pattern.search(lines, start + len(result))
   return lines
 
 class TextMacro:
@@ -166,9 +177,10 @@ CONST_PATTERN = re.compile(r'^const\s+([a-zA-Z0-9_]+)\s*=\s*([^;]*);$')
 MACRO_PATTERN = re.compile(r'^macro\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)\s*=\s*([^;]*);$')
 PYTHON_MACRO_PATTERN = re.compile(r'^python\s+macro\s+([a-zA-Z0-9_]+)\s*\(([^)]*)\)\s*=\s*([^;]*);$')
 
+
 def ReadMacros(lines):
-  constants = { }
-  macros = { }
+  constants = []
+  macros = []
   for line in lines:
     hash = line.find('#')
     if hash != -1: line = line[:hash]
@@ -178,29 +190,29 @@ def ReadMacros(lines):
     if const_match:
       name = const_match.group(1)
       value = const_match.group(2).strip()
-      constants[name] = value
+      constants.append((re.compile("\\b%s\\b" % name), value))
     else:
       macro_match = MACRO_PATTERN.match(line)
       if macro_match:
         name = macro_match.group(1)
-        args = map(string.strip, macro_match.group(2).split(','))
+        args = [match.strip() for match in macro_match.group(2).split(',')]
         body = macro_match.group(3).strip()
-        macros[name] = TextMacro(args, body)
+        macros.append((re.compile("\\b%s\\(" % name), TextMacro(args, body)))
       else:
         python_match = PYTHON_MACRO_PATTERN.match(line)
         if python_match:
           name = python_match.group(1)
-          args = map(string.strip, python_match.group(2).split(','))
+          args = [match.strip() for match in python_match.group(2).split(',')]
           body = python_match.group(3).strip()
           fun = eval("lambda " + ",".join(args) + ': ' + body)
-          macros[name] = PythonMacro(args, fun)
+          macros.append((re.compile("\\b%s\\(" % name), PythonMacro(args, fun)))
         else:
           raise ("Illegal line: " + line)
   return (constants, macros)
 
 
 HEADER_TEMPLATE = """\
-// Copyright 2008 Google Inc. All Rights Reserved.
+// Copyright 2011 Google Inc. All Rights Reserved.
 
 // This file was generated from .js source files by SCons.  If you
 // want to make changes to this file you should either change the
@@ -208,11 +220,14 @@ HEADER_TEMPLATE = """\
 
 #include "v8.h"
 #include "natives.h"
+#include "utils.h"
 
 namespace v8 {
 namespace internal {
 
-%(source_lines)s\
+  static const byte sources[] = { %(sources_data)s };
+
+%(raw_sources_declaration)s\
 
   template <>
   int NativesCollection<%(type)s>::GetBuiltinsCount() {
@@ -231,8 +246,13 @@ namespace internal {
   }
 
   template <>
-  Vector<const char> NativesCollection<%(type)s>::GetScriptSource(int index) {
-%(get_script_source_cases)s\
+  int NativesCollection<%(type)s>::GetRawScriptsSize() {
+    return %(raw_total_length)i;
+  }
+
+  template <>
+  Vector<const char> NativesCollection<%(type)s>::GetRawScriptSource(int index) {
+%(get_raw_script_source_cases)s\
     return Vector<const char>("", 0);
   }
 
@@ -242,27 +262,43 @@ namespace internal {
     return Vector<const char>("", 0);
   }
 
+  template <>
+  Vector<const byte> NativesCollection<%(type)s>::GetScriptsSource() {
+    return Vector<const byte>(sources, %(total_length)i);
+  }
+
+  template <>
+  void NativesCollection<%(type)s>::SetRawScriptsSource(Vector<const char> raw_source) {
+    ASSERT(%(raw_total_length)i == raw_source.length());
+    raw_sources = raw_source.start();
+  }
+
 }  // internal
 }  // v8
 """
 
 
-SOURCE_DECLARATION = """\
-  static const char %(id)s[] = { %(data)s };
+RAW_SOURCES_COMPRESSION_DECLARATION = """\
+  static const char* raw_sources = NULL;
 """
 
 
-GET_DEBUGGER_INDEX_CASE = """\
+RAW_SOURCES_DECLARATION = """\
+  static const char* raw_sources = reinterpret_cast<const char*>(sources);
+"""
+
+
+GET_INDEX_CASE = """\
     if (strcmp(name, "%(id)s") == 0) return %(i)i;
 """
 
 
-GET_DEBUGGER_SCRIPT_SOURCE_CASE = """\
-    if (index == %(i)i) return Vector<const char>(%(id)s, %(length)i);
+GET_RAW_SCRIPT_SOURCE_CASE = """\
+    if (index == %(i)i) return Vector<const char>(raw_sources + %(offset)i, %(raw_length)i);
 """
 
 
-GET_DEBUGGER_SCRIPT_NAME_CASE = """\
+GET_SCRIPT_NAME_CASE = """\
     if (index == %(i)i) return Vector<const char>("%(name)s", %(length)i);
 """
 
@@ -271,20 +307,18 @@ def JS2C(source, target, env):
   debugger_ids = []
   modules = []
   # Locate the macros file name.
-  consts = {}
-  macros = {}
+  consts = []
+  macros = []
   for s in source:
     if 'macros.py' == (os.path.split(str(s))[1]):
       (consts, macros) = ReadMacros(ReadLines(str(s)))
     else:
       modules.append(s)
 
-  # Build source code lines
-  source_lines = [ ]
-
   minifier = jsmin.JavaScriptMinifier()
 
-  source_lines_empty = []
+  module_offset = 0
+  all_sources = []
   for module in modules:
     filename = str(module)
     debugger = filename.endswith('-debugger.js')
@@ -293,50 +327,46 @@ def JS2C(source, target, env):
     lines = ExpandMacros(lines, macros)
     Validate(lines, filename)
     lines = minifier.JSMinify(lines)
-    data = ToCArray(lines)
     id = (os.path.split(filename)[1])[:-3]
     if debugger: id = id[:-9]
+    raw_length = len(lines)
     if debugger:
-      debugger_ids.append((id, len(lines)))
+      debugger_ids.append((id, raw_length, module_offset))
     else:
-      ids.append((id, len(lines)))
-    source_lines.append(SOURCE_DECLARATION % { 'id': id, 'data': data })
-    source_lines_empty.append(SOURCE_DECLARATION % { 'id': id, 'data': data })
+      ids.append((id, raw_length, module_offset))
+    all_sources.append(lines)
+    module_offset += raw_length
+  total_length = raw_total_length = module_offset
+
+  if env['COMPRESSION'] == 'off':
+    raw_sources_declaration = RAW_SOURCES_DECLARATION
+    sources_data = ToCAsciiArray("".join(all_sources))
+  else:
+    raw_sources_declaration = RAW_SOURCES_COMPRESSION_DECLARATION
+    if env['COMPRESSION'] == 'bz2':
+      all_sources = bz2.compress("".join(all_sources))
+    total_length = len(all_sources)
+    sources_data = ToCArray(all_sources)
 
   # Build debugger support functions
   get_index_cases = [ ]
-  get_script_source_cases = [ ]
+  get_raw_script_source_cases = [ ]
   get_script_name_cases = [ ]
 
   i = 0
-  for (id, length) in debugger_ids:
+  for (id, raw_length, module_offset) in debugger_ids + ids:
     native_name = "native %s.js" % id
-    get_index_cases.append(GET_DEBUGGER_INDEX_CASE % { 'id': id, 'i': i })
-    get_script_source_cases.append(GET_DEBUGGER_SCRIPT_SOURCE_CASE % {
-      'id': id,
-      'length': length,
-      'i': i
-    })
-    get_script_name_cases.append(GET_DEBUGGER_SCRIPT_NAME_CASE % {
-      'name': native_name,
-      'length': len(native_name),
-      'i': i
-    });
-    i = i + 1
-
-  for (id, length) in ids:
-    native_name = "native %s.js" % id
-    get_index_cases.append(GET_DEBUGGER_INDEX_CASE % { 'id': id, 'i': i })
-    get_script_source_cases.append(GET_DEBUGGER_SCRIPT_SOURCE_CASE % {
-      'id': id,
-      'length': length,
-      'i': i
-    })
-    get_script_name_cases.append(GET_DEBUGGER_SCRIPT_NAME_CASE % {
-      'name': native_name,
-      'length': len(native_name),
-      'i': i
-    });
+    get_index_cases.append(GET_INDEX_CASE % { 'id': id, 'i': i })
+    get_raw_script_source_cases.append(GET_RAW_SCRIPT_SOURCE_CASE % {
+        'offset': module_offset,
+        'raw_length': raw_length,
+        'i': i
+        })
+    get_script_name_cases.append(GET_SCRIPT_NAME_CASE % {
+        'name': native_name,
+        'length': len(native_name),
+        'i': i
+        })
     i = i + 1
 
   # Emit result
@@ -344,33 +374,23 @@ def JS2C(source, target, env):
   output.write(HEADER_TEMPLATE % {
     'builtin_count': len(ids) + len(debugger_ids),
     'debugger_count': len(debugger_ids),
-    'source_lines': "\n".join(source_lines),
+    'sources_data': sources_data,
+    'raw_sources_declaration': raw_sources_declaration,
+    'raw_total_length': raw_total_length,
+    'total_length': total_length,
     'get_index_cases': "".join(get_index_cases),
-    'get_script_source_cases': "".join(get_script_source_cases),
+    'get_raw_script_source_cases': "".join(get_raw_script_source_cases),
     'get_script_name_cases': "".join(get_script_name_cases),
     'type': env['TYPE']
   })
   output.close()
 
-  if len(target) > 1:
-    output = open(str(target[1]), "w")
-    output.write(HEADER_TEMPLATE % {
-      'builtin_count': len(ids) + len(debugger_ids),
-      'debugger_count': len(debugger_ids),
-      'source_lines': "\n".join(source_lines_empty),
-      'get_index_cases': "".join(get_index_cases),
-      'get_script_source_cases': "".join(get_script_source_cases),
-      'get_script_name_cases': "".join(get_script_name_cases),
-      'type': env['TYPE']
-    })
-    output.close()
-
 def main():
   natives = sys.argv[1]
-  natives_empty = sys.argv[2]
-  type = sys.argv[3]
+  type = sys.argv[2]
+  compression = sys.argv[3]
   source_files = sys.argv[4:]
-  JS2C(source_files, [natives, natives_empty], { 'TYPE': type })
+  JS2C(source_files, [natives], { 'TYPE': type, 'COMPRESSION': compression })
 
 if __name__ == "__main__":
   main()

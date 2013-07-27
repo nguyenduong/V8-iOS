@@ -1,4 +1,4 @@
-// Copyright 2006-2008 the V8 project authors. All rights reserved.
+// Copyright 2012 the V8 project authors. All rights reserved.
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
@@ -29,7 +29,7 @@
 
 #if defined(V8_TARGET_ARCH_ARM)
 
-#include "codegen-inl.h"
+#include "codegen.h"
 #include "debug.h"
 
 namespace v8 {
@@ -48,7 +48,7 @@ void BreakLocationIterator::SetDebugBreakAtReturn() {
   //   add sp, sp, #4
   //   bx lr
   // to a call to the debug break return code.
-  // #if USE_BLX
+  // #ifdef USE_BLX
   //   ldr ip, [pc, #0]
   //   blx ip
   // #else
@@ -65,7 +65,7 @@ void BreakLocationIterator::SetDebugBreakAtReturn() {
   patcher.masm()->mov(v8::internal::lr, v8::internal::pc);
   patcher.masm()->ldr(v8::internal::pc, MemOperand(v8::internal::pc, -4));
 #endif
-  patcher.Emit(Debug::debug_break_return()->entry());
+  patcher.Emit(Isolate::Current()->debug()->debug_break_return()->entry());
   patcher.masm()->bkpt(0);
 }
 
@@ -99,7 +99,7 @@ void BreakLocationIterator::SetDebugBreakAtSlot() {
   //   mov r2, r2
   //   mov r2, r2
   // to a call to the debug break slot code.
-  // #if USE_BLX
+  // #ifdef USE_BLX
   //   ldr ip, [pc, #0]
   //   blx ip
   // #else
@@ -115,7 +115,7 @@ void BreakLocationIterator::SetDebugBreakAtSlot() {
   patcher.masm()->mov(v8::internal::lr, v8::internal::pc);
   patcher.masm()->ldr(v8::internal::pc, MemOperand(v8::internal::pc, -4));
 #endif
-  patcher.Emit(Debug::debug_break_return()->entry());
+  patcher.Emit(Isolate::Current()->debug()->debug_break_slot()->entry());
 }
 
 
@@ -125,50 +125,73 @@ void BreakLocationIterator::ClearDebugBreakAtSlot() {
                      Assembler::kDebugBreakSlotInstructions);
 }
 
+const bool Debug::FramePaddingLayout::kIsSupported = false;
+
 
 #define __ ACCESS_MASM(masm)
 
 
 static void Generate_DebugBreakCallHelper(MacroAssembler* masm,
-                                          RegList pointer_regs) {
-  // Save the content of all general purpose registers in memory. This copy in
-  // memory is later pushed onto the JS expression stack for the fake JS frame
-  // generated and also to the C frame generated on top of that. In the JS
-  // frame ONLY the registers containing pointers will be pushed on the
-  // expression stack. This causes the GC to update these  pointers so that
-  // they will have the correct value when returning from the debugger.
-  __ SaveRegistersToMemory(kJSCallerSaved);
+                                          RegList object_regs,
+                                          RegList non_object_regs) {
+  {
+    FrameScope scope(masm, StackFrame::INTERNAL);
 
-  __ EnterInternalFrame();
-
-  // Store the registers containing object pointers on the expression stack to
-  // make sure that these are correctly updated during GC.
-  // Use sp as base to push.
-  __ CopyRegistersFromMemoryToStack(sp, pointer_regs);
+    // Store the registers containing live values on the expression stack to
+    // make sure that these are correctly updated during GC. Non object values
+    // are stored as a smi causing it to be untouched by GC.
+    ASSERT((object_regs & ~kJSCallerSaved) == 0);
+    ASSERT((non_object_regs & ~kJSCallerSaved) == 0);
+    ASSERT((object_regs & non_object_regs) == 0);
+    if ((object_regs | non_object_regs) != 0) {
+      for (int i = 0; i < kNumJSCallerSaved; i++) {
+        int r = JSCallerSavedCode(i);
+        Register reg = { r };
+        if ((non_object_regs & (1 << r)) != 0) {
+          if (FLAG_debug_code) {
+            __ tst(reg, Operand(0xc0000000));
+            __ Assert(eq, "Unable to encode value as smi");
+          }
+          __ mov(reg, Operand(reg, LSL, kSmiTagSize));
+        }
+      }
+      __ stm(db_w, sp, object_regs | non_object_regs);
+    }
 
 #ifdef DEBUG
-  __ RecordComment("// Calling from debug break to runtime - come in - over");
+    __ RecordComment("// Calling from debug break to runtime - come in - over");
 #endif
-  __ mov(r0, Operand(0));  // no arguments
-  __ mov(r1, Operand(ExternalReference::debug_break()));
+    __ mov(r0, Operand(0, RelocInfo::NONE));  // no arguments
+    __ mov(r1, Operand(ExternalReference::debug_break(masm->isolate())));
 
-  CEntryStub ceb(1, ExitFrame::MODE_DEBUG);
-  __ CallStub(&ceb);
+    CEntryStub ceb(1);
+    __ CallStub(&ceb);
 
-  // Restore the register values containing object pointers from the expression
-  // stack in the reverse order as they where pushed.
-  // Use sp as base to pop.
-  __ CopyRegistersFromStackToMemory(sp, r3, pointer_regs);
+    // Restore the register values from the expression stack.
+    if ((object_regs | non_object_regs) != 0) {
+      __ ldm(ia_w, sp, object_regs | non_object_regs);
+      for (int i = 0; i < kNumJSCallerSaved; i++) {
+        int r = JSCallerSavedCode(i);
+        Register reg = { r };
+        if ((non_object_regs & (1 << r)) != 0) {
+          __ mov(reg, Operand(reg, LSR, kSmiTagSize));
+        }
+        if (FLAG_debug_code &&
+            (((object_regs |non_object_regs) & (1 << r)) == 0)) {
+          __ mov(reg, Operand(kDebugZapValue));
+        }
+      }
+    }
 
-  __ LeaveInternalFrame();
-
-  // Finally restore all registers.
-  __ RestoreRegistersFromMemory(kJSCallerSaved);
+    // Leave the internal frame.
+  }
 
   // Now that the break point has been handled, resume normal execution by
   // jumping to the target address intended by the caller and that was
   // overwritten by the address of DebugBreakXXX.
-  __ mov(ip, Operand(ExternalReference(Debug_Address::AfterBreakTarget())));
+  ExternalReference after_break_target =
+      ExternalReference(Debug_Address::AfterBreakTarget(), masm->isolate());
+  __ mov(ip, Operand(after_break_target));
   __ ldr(ip, MemOperand(ip));
   __ Jump(ip);
 }
@@ -184,7 +207,7 @@ void Debug::GenerateLoadICDebugBreak(MacroAssembler* masm) {
   // -----------------------------------
   // Registers r0 and r2 contain objects that need to be pushed on the
   // expression stack of the fake JS frame.
-  Generate_DebugBreakCallHelper(masm, r0.bit() | r2.bit());
+  Generate_DebugBreakCallHelper(masm, r0.bit() | r2.bit(), 0);
 }
 
 
@@ -198,7 +221,7 @@ void Debug::GenerateStoreICDebugBreak(MacroAssembler* masm) {
   // -----------------------------------
   // Registers r0, r1, and r2 contain objects that need to be pushed on the
   // expression stack of the fake JS frame.
-  Generate_DebugBreakCallHelper(masm, r0.bit() | r1.bit() | r2.bit());
+  Generate_DebugBreakCallHelper(masm, r0.bit() | r1.bit() | r2.bit(), 0);
 }
 
 
@@ -206,9 +229,8 @@ void Debug::GenerateKeyedLoadICDebugBreak(MacroAssembler* masm) {
   // ---------- S t a t e --------------
   //  -- lr     : return address
   //  -- r0     : key
-  //  -- sp[0]  : key
-  //  -- sp[4]  : receiver
-  Generate_DebugBreakCallHelper(masm, r0.bit());
+  //  -- r1     : receiver
+  Generate_DebugBreakCallHelper(masm, r0.bit() | r1.bit(), 0);
 }
 
 
@@ -218,31 +240,16 @@ void Debug::GenerateKeyedStoreICDebugBreak(MacroAssembler* masm) {
   //  -- r1     : key
   //  -- r2     : receiver
   //  -- lr     : return address
-  Generate_DebugBreakCallHelper(masm, r0.bit() | r1.bit() | r2.bit());
+  Generate_DebugBreakCallHelper(masm, r0.bit() | r1.bit() | r2.bit(), 0);
 }
 
 
 void Debug::GenerateCallICDebugBreak(MacroAssembler* masm) {
   // Calling convention for IC call (from ic-arm.cc)
   // ----------- S t a t e -------------
-  //  -- r0: number of arguments
-  //  -- r1: receiver
-  //  -- lr: return address
+  //  -- r2     : name
   // -----------------------------------
-  // Register r1 contains an object that needs to be pushed on the expression
-  // stack of the fake JS frame. r0 is the actual number of arguments not
-  // encoded as a smi, therefore it cannot be on the expression stack of the
-  // fake JS frame as it can easily be an invalid pointer (e.g. 1). r0 will be
-  // pushed on the stack of the C frame and restored from there.
-  Generate_DebugBreakCallHelper(masm, r1.bit());
-}
-
-
-void Debug::GenerateConstructCallDebugBreak(MacroAssembler* masm) {
-  // In places other than IC call sites it is expected that r0 is TOS which
-  // is an object - this is not generally the case so this should be used with
-  // care.
-  Generate_DebugBreakCallHelper(masm, r0.bit());
+  Generate_DebugBreakCallHelper(masm, r2.bit(), 0);
 }
 
 
@@ -250,15 +257,47 @@ void Debug::GenerateReturnDebugBreak(MacroAssembler* masm) {
   // In places other than IC call sites it is expected that r0 is TOS which
   // is an object - this is not generally the case so this should be used with
   // care.
-  Generate_DebugBreakCallHelper(masm, r0.bit());
+  Generate_DebugBreakCallHelper(masm, r0.bit(), 0);
 }
 
 
-void Debug::GenerateStubNoRegistersDebugBreak(MacroAssembler* masm) {
+void Debug::GenerateCallFunctionStubDebugBreak(MacroAssembler* masm) {
+  // Register state for CallFunctionStub (from code-stubs-arm.cc).
   // ----------- S t a t e -------------
-  //  No registers used on entry.
+  //  -- r1 : function
   // -----------------------------------
-  Generate_DebugBreakCallHelper(masm, 0);
+  Generate_DebugBreakCallHelper(masm, r1.bit(), 0);
+}
+
+
+void Debug::GenerateCallFunctionStubRecordDebugBreak(MacroAssembler* masm) {
+  // Register state for CallFunctionStub (from code-stubs-arm.cc).
+  // ----------- S t a t e -------------
+  //  -- r1 : function
+  //  -- r2 : cache cell for call target
+  // -----------------------------------
+  Generate_DebugBreakCallHelper(masm, r1.bit() | r2.bit(), 0);
+}
+
+
+void Debug::GenerateCallConstructStubDebugBreak(MacroAssembler* masm) {
+  // Calling convention for CallConstructStub (from code-stubs-arm.cc)
+  // ----------- S t a t e -------------
+  //  -- r0     : number of arguments (not smi)
+  //  -- r1     : constructor function
+  // -----------------------------------
+  Generate_DebugBreakCallHelper(masm, r1.bit(), r0.bit());
+}
+
+
+void Debug::GenerateCallConstructStubRecordDebugBreak(MacroAssembler* masm) {
+  // Calling convention for CallConstructStub (from code-stubs-arm.cc)
+  // ----------- S t a t e -------------
+  //  -- r0     : number of arguments (not smi)
+  //  -- r1     : constructor function
+  //  -- r2     : cache cell for call target
+  // -----------------------------------
+  Generate_DebugBreakCallHelper(masm, r1.bit() | r2.bit(), r0.bit());
 }
 
 
@@ -270,7 +309,7 @@ void Debug::GenerateSlot(MacroAssembler* masm) {
   __ bind(&check_codesize);
   __ RecordDebugBreakSlot();
   for (int i = 0; i < Assembler::kDebugBreakSlotInstructions; i++) {
-    __ nop(2);
+    __ nop(MacroAssembler::DEBUG_BREAK_NOP);
   }
   ASSERT_EQ(Assembler::kDebugBreakSlotInstructions,
             masm->InstructionsGeneratedSince(&check_codesize));
@@ -280,7 +319,7 @@ void Debug::GenerateSlot(MacroAssembler* masm) {
 void Debug::GenerateSlotDebugBreak(MacroAssembler* masm) {
   // In the places where a debug break slot is inserted no registers can contain
   // object pointers.
-  Generate_DebugBreakCallHelper(masm, 0);
+  Generate_DebugBreakCallHelper(masm, 0, 0);
 }
 
 
@@ -293,14 +332,11 @@ void Debug::GenerateFrameDropperLiveEdit(MacroAssembler* masm) {
   masm->Abort("LiveEdit frame dropping is not supported on arm");
 }
 
+const bool Debug::kFrameDropperSupported = false;
+
 #undef __
 
 
-void Debug::SetUpFrameDropperFrame(StackFrame* bottom_js_frame,
-                                   Handle<Code> code) {
-  UNREACHABLE();
-}
-const int Debug::kFrameDropperFrameSize = -1;
 
 #endif  // ENABLE_DEBUGGER_SUPPORT
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2008 the V8 project authors. All rights reserved.
+# Copyright 2012 the V8 project authors. All rights reserved.
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are
 # met:
@@ -117,6 +117,8 @@ class ProgressIndicator(object):
         start = time.time()
         output = case.Run()
         case.duration = (time.time() - start)
+      except BreakNowException:
+        self.terminate = True
       except IOError, e:
         assert self.terminate
         return
@@ -138,9 +140,9 @@ def EscapeCommand(command):
   parts = []
   for part in command:
     if ' ' in part:
-      # Escape spaces.  We may need to escape more characters for this
-      # to work properly.
-      parts.append('"%s"' % part)
+      # Escape spaces and double quotes. We may need to escape more characters
+      # for this to work properly.
+      parts.append('"%s"' % part.replace('"', '\\"'))
     else:
       parts.append(part)
   return " ".join(parts)
@@ -297,8 +299,6 @@ class MonochromeProgressIndicator(CompactProgressIndicator):
       'status_line': "[%(mins)02i:%(secs)02i|%%%(remaining) 4d|+%(passed) 4d|-%(failed) 4d]: %(test)s",
       'stdout': '%s',
       'stderr': '%s',
-      'clear': lambda last_line_length: ("\r" + (" " * last_line_length) + "\r"),
-      'max_length': 78
     }
     super(MonochromeProgressIndicator, self).__init__(cases, templates)
 
@@ -318,6 +318,12 @@ PROGRESS_INDICATORS = {
 # --- F r a m e w o r k ---
 # -------------------------
 
+class BreakNowException(Exception):
+  def __init__(self, value):
+    self.value = value
+  def __str__(self):
+    return repr(self.value)
+
 
 class CommandOutput(object):
 
@@ -331,12 +337,16 @@ class CommandOutput(object):
 
 class TestCase(object):
 
-  def __init__(self, context, path):
+  def __init__(self, context, path, mode):
     self.path = path
     self.context = context
     self.duration = None
+    self.mode = mode
 
   def IsNegative(self):
+    return False
+
+  def TestsIsolates(self):
     return False
 
   def CompareTime(self, other):
@@ -355,22 +365,34 @@ class TestCase(object):
 
   def RunCommand(self, command):
     full_command = self.context.processor(command)
-    output = Execute(full_command, self.context, self.context.timeout)
+    output = Execute(full_command,
+                     self.context,
+                     self.context.GetTimeout(self, self.mode))
     self.Cleanup()
-    return TestOutput(self, full_command, output)
+    return TestOutput(self,
+                      full_command,
+                      output,
+                      self.context.store_unexpected_output)
 
   def BeforeRun(self):
     pass
 
-  def AfterRun(self):
+  def AfterRun(self, result):
     pass
+
+  def GetCustomFlags(self, mode):
+    return None
 
   def Run(self):
     self.BeforeRun()
+    result = None
     try:
       result = self.RunCommand(self.GetCommand())
+    except:
+      self.terminate = True
+      raise BreakNowException("User pressed CTRL+C or IO went wrong")
     finally:
-      self.AfterRun()
+      self.AfterRun(result)
     return result
 
   def Cleanup(self):
@@ -379,10 +401,11 @@ class TestCase(object):
 
 class TestOutput(object):
 
-  def __init__(self, test, command, output):
+  def __init__(self, test, command, output, store_unexpected_output):
     self.test = test
     self.command = command
     self.output = output
+    self.store_unexpected_output = store_unexpected_output
 
   def UnexpectedOutput(self):
     if self.HasCrashed():
@@ -395,6 +418,9 @@ class TestOutput(object):
       outcome = PASS
     return not outcome in self.test.outcomes
 
+  def HasPreciousOutput(self):
+    return self.UnexpectedOutput() and self.store_unexpected_output
+
   def HasCrashed(self):
     if utils.IsWindows():
       return 0x80000000 & self.output.exit_code and not (0x3FFFFF00 & self.output.exit_code)
@@ -406,7 +432,7 @@ class TestOutput(object):
              self.output.exit_code != -signal.SIGABRT
 
   def HasTimedOut(self):
-    return self.output.timed_out;
+    return self.output.timed_out
 
   def HasFailed(self):
     execution_failed = self.test.DidFail(self.output)
@@ -434,7 +460,7 @@ def Win32SetErrorMode(mode):
   prev_error_mode = SEM_INVALID_VALUE
   try:
     import ctypes
-    prev_error_mode = ctypes.windll.kernel32.SetErrorMode(mode);
+    prev_error_mode = ctypes.windll.kernel32.SetErrorMode(mode)
   except ImportError:
     pass
   return prev_error_mode
@@ -442,16 +468,16 @@ def Win32SetErrorMode(mode):
 def RunProcess(context, timeout, args, **rest):
   if context.verbose: print "#", " ".join(args)
   popen_args = args
-  prev_error_mode = SEM_INVALID_VALUE;
+  prev_error_mode = SEM_INVALID_VALUE
   if utils.IsWindows():
-    popen_args = '"' + subprocess.list2cmdline(args) + '"'
+    popen_args = subprocess.list2cmdline(args)
     if context.suppress_dialogs:
       # Try to change the error mode to avoid dialogs on fatal errors. Don't
       # touch any existing error mode flags by merging the existing error mode.
       # See http://blogs.msdn.com/oldnewthing/archive/2004/07/27/198410.aspx.
-      error_mode = SEM_NOGPFAULTERRORBOX;
-      prev_error_mode = Win32SetErrorMode(error_mode);
-      Win32SetErrorMode(error_mode | prev_error_mode);
+      error_mode = SEM_NOGPFAULTERRORBOX
+      prev_error_mode = Win32SetErrorMode(error_mode)
+      Win32SetErrorMode(error_mode | prev_error_mode)
   process = subprocess.Popen(
     shell = utils.IsWindows(),
     args = popen_args,
@@ -489,11 +515,19 @@ def PrintError(str):
 
 
 def CheckedUnlink(name):
-  try:
-    os.unlink(name)
-  except OSError, e:
-    PrintError("os.unlink() " + str(e))
-
+  # On Windows, when run with -jN in parallel processes,
+  # OS often fails to unlink the temp file. Not sure why.
+  # Need to retry.
+  # Idea from https://bugs.webkit.org/attachment.cgi?id=75982&action=prettypatch
+  retry_count = 0
+  while retry_count < 30:
+    try:
+      os.unlink(name)
+      return
+    except OSError, e:
+      retry_count += 1
+      time.sleep(retry_count * 0.1)
+  PrintError("os.unlink() " + str(e))
 
 def Execute(args, context, timeout=None):
   (fd_out, outname) = tempfile.mkstemp()
@@ -530,6 +564,13 @@ def CarCdr(path):
     return (path[0], path[1:])
 
 
+# Use this to run several variants of the tests, e.g.:
+# VARIANT_FLAGS = [[], ['--always_compact', '--noflush_code']]
+VARIANT_FLAGS = [[],
+                 ['--stress-opt', '--always-opt'],
+                 ['--nocrankshaft']]
+
+
 class TestConfiguration(object):
 
   def __init__(self, context, root):
@@ -546,6 +587,11 @@ class TestConfiguration(object):
 
   def GetTestStatus(self, sections, defs):
     pass
+
+  def VariantFlags(self):
+    return VARIANT_FLAGS
+
+
 
 
 class TestSuite(object):
@@ -583,8 +629,17 @@ class TestRepository(TestSuite):
   def GetBuildRequirements(self, path, context):
     return self.GetConfiguration(context).GetBuildRequirements()
 
-  def ListTests(self, current_path, path, context, mode):
-    return self.GetConfiguration(context).ListTests(current_path, path, mode)
+  def DownloadData(self, context):
+    config = self.GetConfiguration(context)
+    if 'DownloadData' in dir(config):
+      config.DownloadData()
+
+  def AddTestsToList(self, result, current_path, path, context, mode):
+    config = self.GetConfiguration(context)
+    for v in config.VariantFlags():
+      tests = config.ListTests(current_path, path, mode, v)
+      for t in tests: t.variant_flags = v
+      result += tests
 
   def GetTestStatus(self, context, sections, defs):
     self.GetConfiguration(context).GetTestStatus(sections, defs)
@@ -604,14 +659,20 @@ class LiteralTestSuite(TestSuite):
         result += test.GetBuildRequirements(rest, context)
     return result
 
-  def ListTests(self, current_path, path, context, mode):
+  def DownloadData(self, path, context):
+    (name, rest) = CarCdr(path)
+    for test in self.tests:
+      if not name or name.match(test.GetName()):
+        test.DownloadData(context)
+
+  def ListTests(self, current_path, path, context, mode, variant_flags):
     (name, rest) = CarCdr(path)
     result = [ ]
     for test in self.tests:
       test_name = test.GetName()
       if not name or name.match(test_name):
         full_path = current_path + [test_name]
-        result += test.ListTests(full_path, path, context, mode)
+        test.AddTestsToList(result, full_path, path, context, mode)
     return result
 
   def GetTestStatus(self, context, sections, defs):
@@ -619,12 +680,21 @@ class LiteralTestSuite(TestSuite):
       test.GetTestStatus(context, sections, defs)
 
 
-SUFFIX = {'debug': '_g', 'release': ''}
+SUFFIX = {
+    'debug'   : '_g',
+    'release' : '' }
+FLAGS = {
+    'debug'   : ['--nobreak-on-abort', '--nodead-code-elimination',
+                 '--enable-slow-asserts', '--debug-code', '--verify-heap'],
+    'release' : ['--nobreak-on-abort', '--nodead-code-elimination']}
+TIMEOUT_SCALEFACTOR = {
+    'debug'   : 4,
+    'release' : 1 }
 
 
 class Context(object):
 
-  def __init__(self, workspace, buildspace, verbose, vm, timeout, processor, suppress_dialogs):
+  def __init__(self, workspace, buildspace, verbose, vm, timeout, processor, suppress_dialogs, store_unexpected_output):
     self.workspace = workspace
     self.buildspace = buildspace
     self.verbose = verbose
@@ -632,6 +702,7 @@ class Context(object):
     self.timeout = timeout
     self.processor = processor
     self.suppress_dialogs = suppress_dialogs
+    self.store_unexpected_output = store_unexpected_output
 
   def GetVm(self, mode):
     name = self.vm_root + SUFFIX[mode]
@@ -639,9 +710,30 @@ class Context(object):
       name = name + '.exe'
     return name
 
+  def GetVmCommand(self, testcase, mode):
+    return [self.GetVm(mode)] + self.GetVmFlags(testcase, mode)
+
+  def GetVmFlags(self, testcase, mode):
+    flags = testcase.GetCustomFlags(mode)
+    if flags is None:
+      flags = FLAGS[mode]
+    return testcase.variant_flags + flags
+
+  def GetTimeout(self, testcase, mode):
+    result = self.timeout * TIMEOUT_SCALEFACTOR[mode]
+    if '--stress-opt' in self.GetVmFlags(testcase, mode):
+      return result * 4
+    else:
+      return result
+
 def RunTestCases(cases_to_run, progress, tasks):
   progress = PROGRESS_INDICATORS[progress](cases_to_run)
-  return progress.Run(tasks)
+  result = 0
+  try:
+    result = progress.Run(tasks)
+  except Exception, e:
+    print "\n", e
+  return result
 
 
 def BuildRequirements(context, requirements, mode, scons_flags):
@@ -687,6 +779,9 @@ class Variable(Expression):
   def GetOutcomes(self, env, defs):
     if self.name in env: return ListSet([env[self.name]])
     else: return Nothing()
+
+  def Evaluate(self, env, defs):
+    return env[self.name]
 
 
 class Outcome(Expression):
@@ -766,6 +861,9 @@ class Operation(Expression):
     elif self.op == '==':
       inter = self.left.GetOutcomes(env, defs).Intersect(self.right.GetOutcomes(env, defs))
       return not inter.IsEmpty()
+    elif self.op == '!=':
+      inter = self.left.GetOutcomes(env, defs).Intersect(self.right.GetOutcomes(env, defs))
+      return inter.IsEmpty()
     else:
       assert self.op == '&&'
       return self.left.Evaluate(env, defs) and self.right.Evaluate(env, defs)
@@ -848,6 +946,9 @@ class Tokenizer(object):
       elif self.Current(2) == '==':
         self.AddToken('==')
         self.Advance(2)
+      elif self.Current(2) == '!=':
+        self.AddToken('!=')
+        self.Advance(2)
       else:
         return None
     return self.tokens
@@ -900,7 +1001,7 @@ def ParseAtomicExpression(scan):
     return None
 
 
-BINARIES = ['==']
+BINARIES = ['==', '!=']
 def ParseOperatorExpression(scan):
   left = ParseAtomicExpression(scan)
   if not left: return None
@@ -922,7 +1023,7 @@ def ParseConditionalExpression(scan):
     right = ParseOperatorExpression(scan)
     if not right:
       return None
-    left=  Operation(left, 'if', right)
+    left = Operation(left, 'if', right)
   return left
 
 
@@ -962,6 +1063,9 @@ class ClassifiedTest(object):
   def __init__(self, case, outcomes):
     self.case = case
     self.outcomes = outcomes
+
+  def TestsIsolates(self):
+    return self.case.TestsIsolates()
 
 
 class Configuration(object):
@@ -1077,6 +1181,7 @@ def ReadConfigurationInto(path, sections, defs):
 
 
 ARCH_GUESS = utils.GuessArchitecture()
+TIMEOUT_DEFAULT = 60;
 
 
 def BuildOptions():
@@ -1094,12 +1199,16 @@ def BuildOptions():
       default=False, action="store_true")
   result.add_option("--build-only", help="Only build requirements, don't run the tests",
       default=False, action="store_true")
+  result.add_option("--build-system", help="Build system in use (scons or gyp)",
+      default='scons')
   result.add_option("--report", help="Print a summary of the tests to be run",
+      default=False, action="store_true")
+  result.add_option("--download-data", help="Download missing test suite data",
       default=False, action="store_true")
   result.add_option("-s", "--suite", help="A test suite",
       default=[], action="append")
   result.add_option("-t", "--timeout", help="Timeout in seconds",
-      default=60, type="int")
+      default=-1, type="int")
   result.add_option("--arch", help='The architecture to run tests for',
       default='none')
   result.add_option("--snapshot", help="Run the tests with snapshot turned on",
@@ -1121,7 +1230,29 @@ def BuildOptions():
         dest="suppress_dialogs", default=True, action="store_true")
   result.add_option("--no-suppress-dialogs", help="Display Windows dialogs for crashing tests",
         dest="suppress_dialogs", action="store_false")
-  result.add_option("--shell", help="Path to V8 shell", default="shell");
+  result.add_option("--mips-arch-variant", help="mips architecture variant: mips32r1/mips32r2", default="mips32r2");
+  result.add_option("--shell", help="Path to V8 shell", default="d8")
+  result.add_option("--isolates", help="Whether to test isolates", default=False, action="store_true")
+  result.add_option("--store-unexpected-output",
+      help="Store the temporary JS files from tests that fails",
+      dest="store_unexpected_output", default=True, action="store_true")
+  result.add_option("--no-store-unexpected-output",
+      help="Deletes the temporary JS files from tests that fails",
+      dest="store_unexpected_output", action="store_false")
+  result.add_option("--stress-only",
+                    help="Only run tests with --always-opt --stress-opt",
+                    default=False, action="store_true")
+  result.add_option("--nostress",
+                    help="Don't run crankshaft --always-opt --stress-op test",
+                    default=False, action="store_true")
+  result.add_option("--shard-count",
+                    help="Split testsuites into this number of shards",
+                    default=1, type="int")
+  result.add_option("--shard-run",
+                    help="Run this shard from the split up tests.",
+                    default=1, type="int")
+  result.add_option("--noprof", help="Disable profiling support",
+                    default=False)
   return result
 
 
@@ -1149,14 +1280,45 @@ def ProcessOptions(options):
     if options.arch == 'none':
       options.arch = ARCH_GUESS
     options.scons_flags.append("arch=" + options.arch)
+  # Simulators are slow, therefore allow a longer default timeout.
+  if options.timeout == -1:
+    if options.arch in ['android', 'arm', 'mipsel']:
+      options.timeout = 2 * TIMEOUT_DEFAULT;
+    else:
+      options.timeout = TIMEOUT_DEFAULT;
   if options.snapshot:
     options.scons_flags.append("snapshot=on")
+  global VARIANT_FLAGS
+  if options.mips_arch_variant:
+    options.scons_flags.append("mips_arch_variant=" + options.mips_arch_variant)
+
+  if options.stress_only:
+    VARIANT_FLAGS = [['--stress-opt', '--always-opt']]
+  if options.nostress:
+    VARIANT_FLAGS = [[],['--nocrankshaft']]
+  if options.shell.endswith("d8"):
+    if options.special_command:
+      options.special_command += " --test"
+    else:
+      options.special_command = "@ --test"
+  if options.noprof:
+    options.scons_flags.append("prof=off")
+    options.scons_flags.append("profilingsupport=off")
+  if options.build_system == 'gyp':
+    if options.build_only:
+      print "--build-only not supported for gyp, please build manually."
+      options.build_only = False
   return True
+
+
+def DoSkip(case):
+  return (SKIP in case.outcomes) or (SLOW in case.outcomes)
 
 
 REPORT_TEMPLATE = """\
 Total: %(total)i tests
  * %(skipped)4d tests will be skipped
+ * %(timeout)4d tests are expected to timeout sometimes
  * %(nocrash)4d tests are expected to be flaky but not crash
  * %(pass)4d tests are expected to pass
  * %(fail_ok)4d tests are expected to fail that we won't fix
@@ -1168,10 +1330,11 @@ def PrintReport(cases):
     return (PASS in o) and (FAIL in o) and (not CRASH in o) and (not OKAY in o)
   def IsFailOk(o):
     return (len(o) == 2) and (FAIL in o) and (OKAY in o)
-  unskipped = [c for c in cases if not SKIP in c.outcomes]
+  unskipped = [c for c in cases if not DoSkip(c)]
   print REPORT_TEMPLATE % {
     'total': len(cases),
     'skipped': len(cases) - len(unskipped),
+    'timeout': len([t for t in unskipped if TIMEOUT in t.outcomes]),
     'nocrash': len([t for t in unskipped if IsFlaky(t.outcomes)]),
     'pass': len([t for t in unskipped if list(t.outcomes) == [PASS]]),
     'fail_ok': len([t for t in unskipped if IsFailOk(t.outcomes)]),
@@ -1208,14 +1371,15 @@ def GetSpecialCommandProcessor(value):
   else:
     pos = value.find('@')
     import urllib
-    prefix = urllib.unquote(value[:pos]).split()
-    suffix = urllib.unquote(value[pos+1:]).split()
+    import shlex
+    prefix = shlex.split(urllib.unquote(value[:pos]))
+    suffix = shlex.split(urllib.unquote(value[pos+1:]))
     def ExpandCommand(args):
       return prefix + args + suffix
     return ExpandCommand
 
 
-BUILT_IN_TESTS = ['mjsunit', 'cctest', 'message']
+BUILT_IN_TESTS = ['mjsunit', 'cctest', 'message', 'preparser']
 
 
 def GetSuites(test_root):
@@ -1228,6 +1392,20 @@ def FormatTime(d):
   millis = round(d * 1000) % 1000
   return time.strftime("%M:%S.", time.gmtime(d)) + ("%03i" % millis)
 
+def ShardTests(tests, options):
+  if options.shard_count < 2:
+    return tests
+  if options.shard_run < 1 or options.shard_run > options.shard_count:
+    print "shard-run not a valid number, should be in [1:shard-count]"
+    print "defaulting back to running all tests"
+    return tests
+  count = 0
+  shard = []
+  for test in tests:
+    if count % options.shard_count == options.shard_run - 1:
+      shard.append(test)
+    count += 1
+  return shard
 
 def Main():
   parser = BuildOptions()
@@ -1256,13 +1434,18 @@ def Main():
     run_valgrind = join(workspace, "tools", "run-valgrind.py")
     options.special_command = "python -u " + run_valgrind + " @"
 
+  if options.build_system == 'gyp':
+    SUFFIX['debug'] = ''
+
   shell = abspath(options.shell)
   buildspace = dirname(shell)
+
   context = Context(workspace, buildspace, VERBOSE,
                     shell,
                     options.timeout,
                     GetSpecialCommandProcessor(options.special_command),
-                    options.suppress_dialogs)
+                    options.suppress_dialogs,
+                    options.store_unexpected_output)
   # First build the required targets
   if not options.no_build:
     reqs = [ ]
@@ -1278,12 +1461,17 @@ def Main():
   # Just return if we are only building the targets for running the tests.
   if options.build_only:
     return 0
-  
+
   # Get status for tests
   sections = [ ]
   defs = { }
   root.GetTestStatus(context, sections, defs)
   config = Configuration(sections, defs)
+
+  # Download missing test suite data if requested.
+  if options.download_data:
+    for path in paths:
+      root.DownloadData(path, context)
 
   # List the tests
   all_cases = [ ]
@@ -1292,23 +1480,21 @@ def Main():
   globally_unused_rules = None
   for path in paths:
     for mode in options.mode:
-      if not exists(context.GetVm(mode)):
-        print "Can't find shell executable: '%s'" % context.GetVm(mode)
-        continue
       env = {
         'mode': mode,
         'system': utils.GuessOS(),
         'arch': options.arch,
-        'simulator': options.simulator
+        'simulator': options.simulator,
+        'isolates': options.isolates
       }
-      test_list = root.ListTests([], path, context, mode)
+      test_list = root.ListTests([], path, context, mode, [])
       unclassified_tests += test_list
       (cases, unused_rules, all_outcomes) = config.ClassifyTests(test_list, env)
       if globally_unused_rules is None:
         globally_unused_rules = set(unused_rules)
       else:
         globally_unused_rules = globally_unused_rules.intersection(unused_rules)
-      all_cases += cases
+      all_cases += ShardTests(cases, options)
       all_unused.append(unused_rules)
 
   if options.cat:
@@ -1328,12 +1514,13 @@ def Main():
     for rule in globally_unused_rules:
       print "Rule for '%s' was not used." % '/'.join([str(s) for s in rule.path])
 
+  if not options.isolates:
+    all_cases = [c for c in all_cases if not c.TestsIsolates()]
+
   if options.report:
     PrintReport(all_cases)
 
   result = None
-  def DoSkip(case):
-    return SKIP in case.outcomes or SLOW in case.outcomes
   cases_to_run = [ c for c in all_cases if not DoSkip(c) ]
   if len(cases_to_run) == 0:
     print "No tests to run."

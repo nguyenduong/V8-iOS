@@ -38,7 +38,7 @@
 
 
 from __future__ import with_statement
-import sys, types, re, subprocess
+import sys, types, re, subprocess, math
 
 def flatten(l):
   flat = []
@@ -47,8 +47,12 @@ def flatten(l):
 
 def split_nvp(s):
   t = {}
-  for m in re.finditer(r"(\w+)=(-?\d+)", s):
-    t[m.group(1)] = int(m.group(2))
+  for (name, value) in re.findall(r"(\w+)=([-\w]+)", s):
+    try:
+      t[name] = int(value)
+    except ValueError:
+      t[name] = value
+
   return t
 
 def parse_gc_trace(input):
@@ -211,17 +215,47 @@ def plot_all(plots, trace, prefix):
 def reclaimed_bytes(row):
   return row['total_size_before'] - row['total_size_after']
 
+def other_scope(r):
+  if r['gc'] == 's':
+    # there is no 'other' scope for scavenging collections.
+    return 0
+  return r['pause'] - r['mark'] - r['sweep'] - r['external']
+
+def scavenge_scope(r):
+  if r['gc'] == 's':
+    return r['pause'] - r['external']
+  return 0
+
+
+def real_mutator(r):
+  return r['mutator'] - r['stepstook']
+
 plots = [
   [
     Set('style fill solid 0.5 noborder'),
     Set('style histogram rowstacked'),
     Set('style data histograms'),
-    Plot(Item('Marking', 'mark', lc = 'purple'),
+    Plot(Item('Scavenge', scavenge_scope, lc = 'green'),
+         Item('Marking', 'mark', lc = 'purple'),
          Item('Sweep', 'sweep', lc = 'blue'),
-         Item('Compaction', 'compact', lc = 'red'),
-         Item('Other',
-              lambda r: r['pause'] - r['mark'] - r['sweep'] - r['compact'],
-              lc = 'grey'))
+         Item('External', 'external', lc = '#489D43'),
+         Item('Other', other_scope, lc = 'grey'),
+         Item('IGC Steps', 'stepstook', lc = '#FF6347'))
+  ],
+  [
+    Set('style fill solid 0.5 noborder'),
+    Set('style histogram rowstacked'),
+    Set('style data histograms'),
+    Plot(Item('Scavenge', scavenge_scope, lc = 'green'),
+         Item('Marking', 'mark', lc = 'purple'),
+         Item('Sweep', 'sweep', lc = 'blue'),
+         Item('External', 'external', lc = '#489D43'),
+         Item('Other', other_scope, lc = '#ADD8E6'),
+         Item('External', 'external', lc = '#D3D3D3'))
+  ],
+
+  [
+    Plot(Item('Mutator', real_mutator, lc = 'black', style = 'lines'))
   ],
   [
     Set('style histogram rowstacked'),
@@ -256,19 +290,92 @@ plots = [
   ],
 ]
 
+def freduce(f, field, trace, init):
+  return reduce(lambda t,r: f(t, r[field]), trace, init)
+
+def calc_total(trace, field):
+  return freduce(lambda t,v: t + long(v), field, trace, long(0))
+
+def calc_max(trace, field):
+  return freduce(lambda t,r: max(t, r), field, trace, 0)
+
+def count_nonzero(trace, field):
+  return freduce(lambda t,r: t if r == 0 else t + 1, field, trace, 0)
+
+
 def process_trace(filename):
   trace = parse_gc_trace(filename)
-  total_gc = reduce(lambda t,r: t + r['pause'], trace, 0)
-  max_gc = reduce(lambda t,r: max(t, r['pause']), trace, 0)
-  avg_gc = total_gc / len(trace)
+
+  marksweeps = filter(lambda r: r['gc'] == 'ms', trace)
+  scavenges = filter(lambda r: r['gc'] == 's', trace)
+  globalgcs = filter(lambda r: r['gc'] != 's', trace)
+
 
   charts = plot_all(plots, trace, filename)
 
+  def stats(out, prefix, trace, field):
+    n = len(trace)
+    total = calc_total(trace, field)
+    max = calc_max(trace, field)
+    if n > 0:
+      avg = total / n
+    else:
+      avg = 0
+    if n > 1:
+      dev = math.sqrt(freduce(lambda t,r: t + (r - avg) ** 2, field, trace, 0) /
+                      (n - 1))
+    else:
+      dev = 0
+
+    out.write('<tr><td>%s</td><td>%d</td><td>%d</td>'
+              '<td>%d</td><td>%d [dev %f]</td></tr>' %
+              (prefix, n, total, max, avg, dev))
+
+  def HumanReadable(size):
+    suffixes = ['bytes', 'kB', 'MB', 'GB']
+    power = 1
+    for i in range(len(suffixes)):
+      if size < power*1024:
+        return "%.1f" % (float(size) / power) + " " + suffixes[i]
+      power *= 1024
+
+  def throughput(name, trace):
+    total_live_after = calc_total(trace, 'total_size_after')
+    total_live_before = calc_total(trace, 'total_size_before')
+    total_gc = calc_total(trace, 'pause')
+    if total_gc == 0:
+      return
+    out.write('GC %s Throughput (after): %s / %s ms = %s/ms<br/>' %
+              (name,
+               HumanReadable(total_live_after),
+               total_gc,
+               HumanReadable(total_live_after / total_gc)))
+    out.write('GC %s Throughput (before): %s / %s ms = %s/ms<br/>' %
+              (name,
+               HumanReadable(total_live_before),
+               total_gc,
+               HumanReadable(total_live_before / total_gc)))
+
+
   with open(filename + '.html', 'w') as out:
     out.write('<html><body>')
-    out.write('Total in GC: <b>%d</b><br/>' % total_gc)
-    out.write('Max in GC: <b>%d</b><br/>' % max_gc)
-    out.write('Avg in GC: <b>%d</b><br/>' % avg_gc)
+    out.write('<table>')
+    out.write('<tr><td>Phase</td><td>Count</td><td>Time (ms)</td>')
+    out.write('<td>Max</td><td>Avg</td></tr>')
+    stats(out, 'Total in GC', trace, 'pause')
+    stats(out, 'Scavenge', scavenges, 'pause')
+    stats(out, 'MarkSweep', marksweeps, 'pause')
+    stats(out, 'Mark', filter(lambda r: r['mark'] != 0, trace), 'mark')
+    stats(out, 'Sweep', filter(lambda r: r['sweep'] != 0, trace), 'sweep')
+    stats(out,
+          'External',
+          filter(lambda r: r['external'] != 0, trace),
+          'external')
+    out.write('</table>')
+    throughput('TOTAL', trace)
+    throughput('MS', marksweeps)
+    throughput('OLDSPACE', globalgcs)
+    out.write('<br/>')
     for chart in charts:
       out.write('<img src="%s">' % chart)
       out.write('</body></html>')

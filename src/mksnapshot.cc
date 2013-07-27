@@ -25,20 +25,22 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#include <errno.h>
+#include <stdio.h>
+#ifdef COMPRESS_STARTUP_DATA_BZ2
+#include <bzlib.h>
+#endif
 #include <signal.h>
-#include <string>
-#include <map>
 
 #include "v8.h"
 
 #include "bootstrapper.h"
+#include "flags.h"
 #include "natives.h"
 #include "platform.h"
 #include "serialize.h"
 #include "list.h"
 
-// use explicit namespace to avoid clashing with types in namespace v8
-namespace i = v8::internal;
 using namespace v8;
 
 static const unsigned int kMaxCounters = 256;
@@ -85,21 +87,54 @@ class CounterCollection {
 };
 
 
-// We statically allocate a set of local counters to be used if we
-// don't want to store the stats in a memory-mapped file
-static CounterCollection local_counters;
-
-
-typedef std::map<std::string, int*> CounterMap;
-typedef std::map<std::string, int*>::iterator CounterMapIterator;
-static CounterMap counter_table_;
-
-
-class CppByteSink : public i::SnapshotByteSink {
+class Compressor {
  public:
-  explicit CppByteSink(const char* snapshot_file)
-      : bytes_written_(0),
-        partial_sink_(this) {
+  virtual ~Compressor() {}
+  virtual bool Compress(i::Vector<char> input) = 0;
+  virtual i::Vector<char>* output() = 0;
+};
+
+
+class PartialSnapshotSink : public i::SnapshotByteSink {
+ public:
+  PartialSnapshotSink() : data_(), raw_size_(-1) { }
+  virtual ~PartialSnapshotSink() { data_.Free(); }
+  virtual void Put(int byte, const char* description) {
+    data_.Add(byte);
+  }
+  virtual int Position() { return data_.length(); }
+  void Print(FILE* fp) {
+    int length = Position();
+    for (int j = 0; j < length; j++) {
+      if ((j & 0x1f) == 0x1f) {
+        fprintf(fp, "\n");
+      }
+      if (j != 0) {
+        fprintf(fp, ",");
+      }
+      fprintf(fp, "%u", static_cast<unsigned char>(at(j)));
+    }
+  }
+  char at(int i) { return data_[i]; }
+  bool Compress(Compressor* compressor) {
+    ASSERT_EQ(-1, raw_size_);
+    raw_size_ = data_.length();
+    if (!compressor->Compress(data_.ToVector())) return false;
+    data_.Clear();
+    data_.AddAll(*compressor->output());
+    return true;
+  }
+  int raw_size() { return raw_size_; }
+
+ private:
+  i::List<char> data_;
+  int raw_size_;
+};
+
+
+class CppByteSink : public PartialSnapshotSink {
+ public:
+  explicit CppByteSink(const char* snapshot_file) {
     fp_ = i::OS::FOpen(snapshot_file, "wb");
     if (fp_ == NULL) {
       i::PrintF("Unable to write to snapshot file \"%s\"\n", snapshot_file);
@@ -114,101 +149,152 @@ class CppByteSink : public i::SnapshotByteSink {
   }
 
   virtual ~CppByteSink() {
-    fprintf(fp_, "const int Snapshot::size_ = %d;\n\n", bytes_written_);
+    fprintf(fp_, "const int Snapshot::size_ = %d;\n", Position());
+#ifdef COMPRESS_STARTUP_DATA_BZ2
+    fprintf(fp_, "const byte* Snapshot::raw_data_ = NULL;\n");
+    fprintf(fp_,
+            "const int Snapshot::raw_size_ = %d;\n\n",
+            raw_size());
+#else
+    fprintf(fp_,
+            "const byte* Snapshot::raw_data_ = Snapshot::data_;\n");
+    fprintf(fp_,
+            "const int Snapshot::raw_size_ = Snapshot::size_;\n\n");
+#endif
     fprintf(fp_, "} }  // namespace v8::internal\n");
     fclose(fp_);
   }
 
   void WriteSpaceUsed(
+      const char* prefix,
       int new_space_used,
       int pointer_space_used,
       int data_space_used,
       int code_space_used,
       int map_space_used,
-      int cell_space_used,
-      int large_space_used) {
-    fprintf(fp_, "};\n\n");
-    fprintf(fp_, "const int Snapshot::new_space_used_ = %d;\n", new_space_used);
+      int cell_space_used) {
     fprintf(fp_,
-            "const int Snapshot::pointer_space_used_ = %d;\n",
+            "const int Snapshot::%snew_space_used_ = %d;\n",
+            prefix,
+            new_space_used);
+    fprintf(fp_,
+            "const int Snapshot::%spointer_space_used_ = %d;\n",
+            prefix,
             pointer_space_used);
     fprintf(fp_,
-            "const int Snapshot::data_space_used_ = %d;\n",
+            "const int Snapshot::%sdata_space_used_ = %d;\n",
+            prefix,
             data_space_used);
     fprintf(fp_,
-            "const int Snapshot::code_space_used_ = %d;\n",
+            "const int Snapshot::%scode_space_used_ = %d;\n",
+            prefix,
             code_space_used);
-    fprintf(fp_, "const int Snapshot::map_space_used_ = %d;\n", map_space_used);
     fprintf(fp_,
-            "const int Snapshot::cell_space_used_ = %d;\n",
+            "const int Snapshot::%smap_space_used_ = %d;\n",
+            prefix,
+            map_space_used);
+    fprintf(fp_,
+            "const int Snapshot::%scell_space_used_ = %d;\n",
+            prefix,
             cell_space_used);
-    fprintf(fp_,
-            "const int Snapshot::large_space_used_ = %d;\n",
-            large_space_used);
   }
 
   void WritePartialSnapshot() {
     int length = partial_sink_.Position();
     fprintf(fp_, "};\n\n");
     fprintf(fp_, "const int Snapshot::context_size_ = %d;\n",  length);
+#ifdef COMPRESS_STARTUP_DATA_BZ2
+    fprintf(fp_,
+            "const int Snapshot::context_raw_size_ = %d;\n",
+            partial_sink_.raw_size());
+#else
+    fprintf(fp_,
+            "const int Snapshot::context_raw_size_ = "
+            "Snapshot::context_size_;\n");
+#endif
     fprintf(fp_, "const byte Snapshot::context_data_[] = {\n");
-    for (int j = 0; j < length; j++) {
-      if ((j & 0x1f) == 0x1f) {
-        fprintf(fp_, "\n");
-      }
-      char byte = partial_sink_.at(j);
-      if (j != 0) {
-        fprintf(fp_, ",");
-      }
-      fprintf(fp_, "%d", byte);
-    }
+    partial_sink_.Print(fp_);
+    fprintf(fp_, "};\n\n");
+#ifdef COMPRESS_STARTUP_DATA_BZ2
+    fprintf(fp_, "const byte* Snapshot::context_raw_data_ = NULL;\n");
+#else
+    fprintf(fp_, "const byte* Snapshot::context_raw_data_ ="
+            " Snapshot::context_data_;\n");
+#endif
   }
 
-  virtual void Put(int byte, const char* description) {
-    if (bytes_written_ != 0) {
-      fprintf(fp_, ",");
-    }
-    fprintf(fp_, "%d", byte);
-    bytes_written_++;
-    if ((bytes_written_ & 0x1f) == 0) {
-      fprintf(fp_, "\n");
-    }
+  void WriteSnapshot() {
+    Print(fp_);
   }
 
-  virtual int Position() {
-    return bytes_written_;
-  }
-
-  i::SnapshotByteSink* partial_sink() { return &partial_sink_; }
-
-  class PartialSnapshotSink : public i::SnapshotByteSink {
-   public:
-    explicit PartialSnapshotSink(CppByteSink* parent)
-        : parent_(parent),
-          data_() { }
-    virtual ~PartialSnapshotSink() { data_.Free(); }
-    virtual void Put(int byte, const char* description) {
-      data_.Add(byte);
-    }
-    virtual int Position() { return data_.length(); }
-    char at(int i) { return data_[i]; }
-   private:
-    CppByteSink* parent_;
-    i::List<char> data_;
-  };
+  PartialSnapshotSink* partial_sink() { return &partial_sink_; }
 
  private:
   FILE* fp_;
-  int bytes_written_;
   PartialSnapshotSink partial_sink_;
 };
 
 
+#ifdef COMPRESS_STARTUP_DATA_BZ2
+class BZip2Compressor : public Compressor {
+ public:
+  BZip2Compressor() : output_(NULL) {}
+  virtual ~BZip2Compressor() {
+    delete output_;
+  }
+  virtual bool Compress(i::Vector<char> input) {
+    delete output_;
+    output_ = new i::ScopedVector<char>((input.length() * 101) / 100 + 1000);
+    unsigned int output_length_ = output_->length();
+    int result = BZ2_bzBuffToBuffCompress(output_->start(), &output_length_,
+                                          input.start(), input.length(),
+                                          9, 1, 0);
+    if (result == BZ_OK) {
+      output_->Truncate(output_length_);
+      return true;
+    } else {
+      fprintf(stderr, "bzlib error code: %d\n", result);
+      return false;
+    }
+  }
+  virtual i::Vector<char>* output() { return output_; }
+
+ private:
+  i::ScopedVector<char>* output_;
+};
+
+
+class BZip2Decompressor : public StartupDataDecompressor {
+ public:
+  virtual ~BZip2Decompressor() { }
+
+ protected:
+  virtual int DecompressData(char* raw_data,
+                             int* raw_data_size,
+                             const char* compressed_data,
+                             int compressed_data_size) {
+    ASSERT_EQ(StartupData::kBZip2,
+              V8::GetCompressedStartupDataAlgorithm());
+    unsigned int decompressed_size = *raw_data_size;
+    int result =
+        BZ2_bzBuffToBuffDecompress(raw_data,
+                                   &decompressed_size,
+                                   const_cast<char*>(compressed_data),
+                                   compressed_data_size,
+                                   0, 1);
+    if (result == BZ_OK) {
+      *raw_data_size = decompressed_size;
+    }
+    return result;
+  }
+};
+#endif
+
+
 int main(int argc, char** argv) {
-#ifdef ENABLE_LOGGING_AND_PROFILING
   // By default, log code create information in the snapshot.
   i::FLAG_log_code = true;
-#endif
+
   // Print the usage if an error occurs when parsing the command line
   // flags or if the help flag is set.
   int result = i::FlagList::SetFlagsFromCommandLine(&argc, argv, true);
@@ -217,18 +303,86 @@ int main(int argc, char** argv) {
     i::FlagList::PrintHelp();
     return !i::FLAG_help;
   }
+#ifdef COMPRESS_STARTUP_DATA_BZ2
+  BZip2Decompressor natives_decompressor;
+  int bz2_result = natives_decompressor.Decompress();
+  if (bz2_result != BZ_OK) {
+    fprintf(stderr, "bzip error code: %d\n", bz2_result);
+    exit(1);
+  }
+#endif
   i::Serializer::Enable();
   Persistent<Context> context = v8::Context::New();
-  ASSERT(!context.IsEmpty());
+  if (context.IsEmpty()) {
+    fprintf(stderr,
+            "\nException thrown while compiling natives - see above.\n\n");
+    exit(1);
+  }
+  if (i::FLAG_extra_code != NULL) {
+    context->Enter();
+    // Capture 100 frames if anything happens.
+    V8::SetCaptureStackTraceForUncaughtExceptions(true, 100);
+    HandleScope scope;
+    const char* name = i::FLAG_extra_code;
+    FILE* file = i::OS::FOpen(name, "rb");
+    if (file == NULL) {
+      fprintf(stderr, "Failed to open '%s': errno %d\n", name, errno);
+      exit(1);
+    }
+
+    fseek(file, 0, SEEK_END);
+    int size = ftell(file);
+    rewind(file);
+
+    char* chars = new char[size + 1];
+    chars[size] = '\0';
+    for (int i = 0; i < size;) {
+      int read = static_cast<int>(fread(&chars[i], 1, size - i, file));
+      if (read < 0) {
+        fprintf(stderr, "Failed to read '%s': errno %d\n", name, errno);
+        exit(1);
+      }
+      i += read;
+    }
+    fclose(file);
+    Local<String> source = String::New(chars);
+    TryCatch try_catch;
+    Local<Script> script = Script::Compile(source);
+    if (try_catch.HasCaught()) {
+      fprintf(stderr, "Failure compiling '%s' (see above)\n", name);
+      exit(1);
+    }
+    script->Run();
+    if (try_catch.HasCaught()) {
+      fprintf(stderr, "Failure running '%s'\n", name);
+      Local<Message> message = try_catch.Message();
+      Local<String> message_string = message->Get();
+      Local<String> message_line = message->GetSourceLine();
+      int len = 2 + message_string->Utf8Length() + message_line->Utf8Length();
+      char* buf = new char(len);
+      message_string->WriteUtf8(buf);
+      fprintf(stderr, "%s at line %d\n", buf, message->GetLineNumber());
+      message_line->WriteUtf8(buf);
+      fprintf(stderr, "%s\n", buf);
+      int from = message->GetStartColumn();
+      int to = message->GetEndColumn();
+      int i;
+      for (i = 0; i < from; i++) fprintf(stderr, " ");
+      for ( ; i <= to; i++) fprintf(stderr, "^");
+      fprintf(stderr, "\n");
+      exit(1);
+    }
+    context->Exit();
+  }
   // Make sure all builtin scripts are cached.
   { HandleScope scope;
     for (int i = 0; i < i::Natives::GetBuiltinsCount(); i++) {
-      i::Bootstrapper::NativesSourceLookup(i);
+      i::Isolate::Current()->bootstrapper()->NativesSourceLookup(i);
     }
   }
   // If we don't do this then we end up with a stray root pointing at the
   // context even after we have disposed of the context.
-  i::Heap::CollectAllGarbage(true);
+  HEAP->CollectAllGarbage(i::Heap::kNoGCFlags, "mksnapshot");
   i::Object* raw_context = *(v8::Utils::OpenHandle(*context));
   context.Dispose();
   CppByteSink sink(argv[1]);
@@ -242,15 +396,31 @@ int main(int argc, char** argv) {
 
   ser.SerializeWeakReferences();
 
+#ifdef COMPRESS_STARTUP_DATA_BZ2
+  BZip2Compressor compressor;
+  if (!sink.Compress(&compressor))
+    return 1;
+  if (!sink.partial_sink()->Compress(&compressor))
+    return 1;
+#endif
+  sink.WriteSnapshot();
   sink.WritePartialSnapshot();
 
   sink.WriteSpaceUsed(
+      "context_",
       partial_ser.CurrentAllocationAddress(i::NEW_SPACE),
       partial_ser.CurrentAllocationAddress(i::OLD_POINTER_SPACE),
       partial_ser.CurrentAllocationAddress(i::OLD_DATA_SPACE),
       partial_ser.CurrentAllocationAddress(i::CODE_SPACE),
       partial_ser.CurrentAllocationAddress(i::MAP_SPACE),
-      partial_ser.CurrentAllocationAddress(i::CELL_SPACE),
-      partial_ser.CurrentAllocationAddress(i::LO_SPACE));
+      partial_ser.CurrentAllocationAddress(i::CELL_SPACE));
+  sink.WriteSpaceUsed(
+      "",
+      ser.CurrentAllocationAddress(i::NEW_SPACE),
+      ser.CurrentAllocationAddress(i::OLD_POINTER_SPACE),
+      ser.CurrentAllocationAddress(i::OLD_DATA_SPACE),
+      ser.CurrentAllocationAddress(i::CODE_SPACE),
+      ser.CurrentAllocationAddress(i::MAP_SPACE),
+      ser.CurrentAllocationAddress(i::CELL_SPACE));
   return 0;
 }

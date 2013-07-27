@@ -31,23 +31,21 @@
 namespace v8 {
 namespace internal {
 
+class Isolate;
+
 // FuncNameInferrer is a stateful class that is used to perform name
 // inference for anonymous functions during static analysis of source code.
 // Inference is performed in cases when an anonymous function is assigned
 // to a variable or a property (see test-func-name-inference.cc for examples.)
 //
-// The basic idea is that during AST traversal LHSs of expressions are
-// always visited before RHSs. Thus, during visiting the LHS, a name can be
-// collected, and during visiting the RHS, a function literal can be collected.
-// Inference is performed while leaving the assignment node.
-class FuncNameInferrer BASE_EMBEDDED {
+// The basic idea is that during parsing of LHSs of certain expressions
+// (assignments, declarations, object literals) we collect name strings,
+// and during parsing of the RHS, a function literal can be collected. After
+// parsing the RHS we can infer a name for function literals that do not have
+// a name.
+class FuncNameInferrer : public ZoneObject {
  public:
-  FuncNameInferrer()
-      : entries_stack_(10),
-        names_stack_(5),
-        funcs_to_infer_(4),
-        dot_(Factory::NewStringFromAscii(CStrVector("."))) {
-  }
+  FuncNameInferrer(Isolate* isolate, Zone* zone);
 
   // Returns whether we have entered name collection state.
   bool IsOpen() const { return !entries_stack_.is_empty(); }
@@ -57,33 +55,58 @@ class FuncNameInferrer BASE_EMBEDDED {
 
   // Enters name collection state.
   void Enter() {
-    entries_stack_.Add(names_stack_.length());
+    entries_stack_.Add(names_stack_.length(), zone());
   }
 
   // Pushes an encountered name onto names stack when in collection state.
-  void PushName(Handle<String> name) {
-    if (IsOpen()) {
-      names_stack_.Add(name);
-    }
-  }
+  void PushLiteralName(Handle<String> name);
+
+  void PushVariableName(Handle<String> name);
 
   // Adds a function to infer name for.
   void AddFunction(FunctionLiteral* func_to_infer) {
     if (IsOpen()) {
-      funcs_to_infer_.Add(func_to_infer);
+      funcs_to_infer_.Add(func_to_infer, zone());
+    }
+  }
+
+  void RemoveLastFunction() {
+    if (IsOpen() && !funcs_to_infer_.is_empty()) {
+      funcs_to_infer_.RemoveLast();
     }
   }
 
   // Infers a function name and leaves names collection state.
-  void InferAndLeave() {
+  void Infer() {
     ASSERT(IsOpen());
     if (!funcs_to_infer_.is_empty()) {
       InferFunctionsNames();
     }
+  }
+
+  // Leaves names collection state.
+  void Leave() {
+    ASSERT(IsOpen());
     names_stack_.Rewind(entries_stack_.RemoveLast());
+    if (entries_stack_.is_empty())
+      funcs_to_infer_.Clear();
   }
 
  private:
+  enum NameType {
+    kEnclosingConstructorName,
+    kLiteralName,
+    kVariableName
+  };
+  struct Name {
+    Name(Handle<String> name, NameType type) : name(name), type(type) { }
+    Handle<String> name;
+    NameType type;
+  };
+
+  Isolate* isolate() { return isolate_; }
+  Zone* zone() const { return zone_; }
+
   // Constructs a full name in dotted notation from gathered names.
   Handle<String> MakeNameFromStack();
 
@@ -93,40 +116,13 @@ class FuncNameInferrer BASE_EMBEDDED {
   // Performs name inferring for added functions.
   void InferFunctionsNames();
 
+  Isolate* isolate_;
   ZoneList<int> entries_stack_;
-  ZoneList<Handle<String> > names_stack_;
+  ZoneList<Name> names_stack_;
   ZoneList<FunctionLiteral*> funcs_to_infer_;
-  Handle<String> dot_;
+  Zone* zone_;
 
   DISALLOW_COPY_AND_ASSIGN(FuncNameInferrer);
-};
-
-
-// A wrapper class that automatically calls InferAndLeave when
-// leaving scope.
-class ScopedFuncNameInferrer BASE_EMBEDDED {
- public:
-  explicit ScopedFuncNameInferrer(FuncNameInferrer* inferrer)
-      : inferrer_(inferrer),
-        is_entered_(false) {}
-
-  ~ScopedFuncNameInferrer() {
-    if (is_entered_) {
-      inferrer_->InferAndLeave();
-    }
-  }
-
-  // Triggers the wrapped inferrer into name collection state.
-  void Enter() {
-    inferrer_->Enter();
-    is_entered_ = true;
-  }
-
- private:
-  FuncNameInferrer* inferrer_;
-  bool is_entered_;
-
-  DISALLOW_COPY_AND_ASSIGN(ScopedFuncNameInferrer);
 };
 
 

@@ -49,6 +49,8 @@ def GuessOS():
     return 'linux'
   elif id == 'Darwin':
     return 'macos'
+  elif id.find('CYGWIN') >= 0:
+    return 'cygwin'
   elif id == 'Windows' or id == 'Microsoft':
     # On Windows Vista platform.system() can return 'Microsoft' with some
     # versions of Python, see http://bugs.python.org/issue1082
@@ -59,17 +61,25 @@ def GuessOS():
     return 'openbsd'
   elif id == 'SunOS':
     return 'solaris'
+  elif id == 'NetBSD':
+    return 'netbsd'
   else:
     return None
 
 
+# This will default to building the 32 bit VM even on machines that are capable
+# of running the 64 bit VM.  Use the scons option --arch=x64 to force it to build
+# the 64 bit VM.
 def GuessArchitecture():
   id = platform.machine()
+  id = id.lower()  # Windows 7 capitalizes 'AMD64'.
   if id.startswith('arm'):
     return 'arm'
-  elif (not id) or (not re.match('(x|i[3-6])86', id) is None):
+  elif (not id) or (not re.match('(x|i[3-6])86$', id) is None):
     return 'ia32'
   elif id == 'i86pc':
+    return 'ia32'
+  elif id == 'x86_64':
     return 'ia32'
   elif id == 'amd64':
     return 'ia32'

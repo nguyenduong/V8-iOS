@@ -1,0 +1,948 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="..">
+      <UniqueIdentifier>{739DB09A-CC57-A953-A6CF-F64FA08E4FA7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\..">
+      <UniqueIdentifier>{739DB09A-CC57-A953-A6CF-F64FA08E4FA7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\..\src">
+      <UniqueIdentifier>{8CDEE807-BC53-E450-C8B8-4DEBB66742D4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\..\src\extensions">
+      <UniqueIdentifier>{76083E2D-7590-88DA-EC98-B85C08DD3529}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\..\src\vm">
+      <UniqueIdentifier>{dbe348f9-7d55-4b1a-8ad4-49974719ad29}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="v8.gyp" />
+    <ClCompile Include="..\..\src\circular-queue.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\full-codegen.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\runtime-profiler.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\preparser.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dtoa.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\checks.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\store-buffer-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\execution.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\liveedit.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\disasm.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\elements-kind.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\char-predicates-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\hydrogen.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\optimizing-compiler-thread.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\debug-agent.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\hydrogen.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\profile-generator-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\debug.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\cached-powers.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\conversions.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\scanner.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\builtins.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\builtins.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\factory.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\global-handles.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\handles-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\zone-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\platform-win32.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\messages.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\regexp-macro-assembler-irregexp.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\dtoa.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\list.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\accessors.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\debug-agent.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\objects-printer.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\interpreter-irregexp.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\snapshot.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ast.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\token.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\circular-queue.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\code-stubs.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\ic-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\unicode.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\contexts.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\interface.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\inspector.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dateparser-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\win32-math.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\serialize.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\store-buffer.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\spaces.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\type-info.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\platform-tls-win32.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\runtime-profiler.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\jsregexp.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\disassembler.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\scopes.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\unbound-queue.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\heap-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\factory.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\api.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\date.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\lithium.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\global-handles.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compilation-cache.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\version.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\store-buffer.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\elements.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\accessors.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\date.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\dateparser.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\func-name-inferrer.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\scopeinfo.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\string-stream.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\variables.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\circular-queue-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\platform-tls.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\bootstrapper.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fixed-dtoa.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\log.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\api.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\v8.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpu.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\frames.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\transitions.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\compiler.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\preparse-data.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\objects.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\serialize.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\v8utils.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\isolate.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\rewriter.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\regexp-stack.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\bignum-dtoa.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\objects-visiting.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\cpu-profiler.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\arguments.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\counters.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\preparse-data.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\once.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\string-search.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\optimizing-compiler-thread.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\log-utils.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\log-utils.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\lithium-allocator.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\data-flow.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\gdb-jit.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\strtod.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\allocation.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\version.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\utils.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\unicode-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\incremental-marking.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\string-search.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\spaces-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\handles.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\deoptimizer.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\json-stringifier.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\gdb-jit.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\regexp-macro-assembler-tracer.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\liveobjectlist.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\objects-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\scopeinfo.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\type-info.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\regexp-stack.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\heap.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bignum.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\assembler.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\flags.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\profile-generator.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\handles.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\transitions-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\token.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\v8globals.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpu-profiler-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\allocation.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\liveobjectlist.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\heap-profiler.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\preparser.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\vm-state-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\ic.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\string-stream.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\spaces.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\v8-counters.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\isolate.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\platform.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\cached-powers.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\debug.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\property.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\macro-assembler.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\runtime.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\platform-posix.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\safepoint-table.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\smart-pointers.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\lithium-allocator-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\execution.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\counters.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\liveobjectlist-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\stub-cache.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\compilation-cache.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\win32-math.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dateparser.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\ic.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\data-flow.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\checks.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\double.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cpu-profiler.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\hydrogen-instructions.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\conversions.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\json-parser.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\compiler.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\bignum.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\heap-profiler.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ast.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\disassembler.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\snapshot-common.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\interface.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\list-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\platform-tls-mac.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\regexp-macro-assembler-irregexp.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\jsregexp.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\log-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\safepoint-table.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\regexp-macro-assembler.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\frames-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\v8utils.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\assembler.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\deoptimizer.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\liveedit.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\apiutils.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\property-details.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\lithium-allocator.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\scanner.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\full-codegen.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\preparse-data-format.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\objects-debug.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\interpreter-irregexp.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\func-name-inferrer.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\mark-compact.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\char-predicates.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\heap.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\bootstrapper.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\fixed-dtoa.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\elements-kind.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\scanner-character-streams.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\parser.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\fast-dtoa.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\conversions-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\variables.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\property.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\atomicops.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\v8conversions.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unicode.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\globals.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\hashmap.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\objects-visiting.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\flags.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\objects.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\parser.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\prettyprinter.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\diy-fp.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\incremental-marking.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\hydrogen-instructions.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\runtime.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\codegen.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\regexp-macro-assembler-irregexp-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\bignum-dtoa.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\zone.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\regexp-macro-assembler.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\scopes.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\v8threads.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\scanner-character-streams.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm-state.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\elements.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\bytecodes-irregexp.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\regexp-macro-assembler-tracer.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\messages.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\code-stubs.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\v8.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\prettyprinter.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\profile-generator.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\lithium.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\v8threads.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\utils-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\atomicops_internals_x86_gcc.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\once.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\log.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\inspector.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fast-dtoa.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\v8checks.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\zone.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\diy-fp.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\v8memory.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\transitions.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\strtod.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\unbound-queue-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\code.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\small-pointer-list.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\codegen.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\contexts.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\flag-definitions.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\frames.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\rewriter.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\natives.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\v8conversions.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\mark-compact.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\stub-cache.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\lazy-instance.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\v8-counters.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\extensions\statistics-extension.h">
+      <Filter>..\..\src\extensions</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\extensions\externalize-string-extension.cc">
+      <Filter>..\..\src\extensions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\extensions\statistics-extension.cc">
+      <Filter>..\..\src\extensions</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\extensions\externalize-string-extension.h">
+      <Filter>..\..\src\extensions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\extensions\gc-extension.h">
+      <Filter>..\..\src\extensions</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\extensions\gc-extension.cc">
+      <Filter>..\..\src\extensions</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\vm\assembler-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\builtins-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\codegen-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\code-stubs-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\cpu-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\debug-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\deoptimizer-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\disasm-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\frames-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\full-codegen-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\ic-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\lithium-codegen-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\lithium-gap-resolver-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\lithium-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\macro-assembler-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\regexp-macro-assembler-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\simulator-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\stub-cache-vm.cc">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\vm\interpreter-vm.cpp">
+      <Filter>..\..\src\vm</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\vm\assembler-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\assembler-vm-inl.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\codegen-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\code-stubs-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\frames-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\lithium-codegen-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\lithium-gap-resolver-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\lithium-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\macro-assembler-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\regexp-macro-assembler-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\simulator-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\vm\interpreter-vm.h">
+      <Filter>..\..\src\vm</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

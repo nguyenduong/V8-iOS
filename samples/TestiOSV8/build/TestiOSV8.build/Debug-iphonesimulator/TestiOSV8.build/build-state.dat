@@ -1,0 +1,353 @@
+TTestiOSV8
+v5
+r1
+cCheck dependencies
+cProcessInfoPlistFile /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Info.plist TestiOSV8/TestiOSV8-Info.plist
+cProcessPCH /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch.pth TestiOSV8/TestiOSV8-Prefix.pch normal i386 objective-c com.apple.compilers.llvm.clang.1_0.compiler
+cProcessPCH++ /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-dkoqpjqwxipjazdffmznpcidkngo/TestiOSV8-Prefix.pch.pth TestiOSV8/TestiOSV8-Prefix.pch normal i386 c++ com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/main.o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/main.m normal i386 objective-c com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/AppDelegate.o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/AppDelegate.m normal i386 objective-c com.apple.compilers.llvm.clang.1_0.compiler
+cCompileC build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestV8.o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp normal i386 c++ com.apple.compilers.llvm.clang.1_0.compiler
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/../../tools/gyp/v8.xcodeproj
+c0000000051D007300000000000000066
+t1372587824
+s102
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/../../xcodebuild/Debug-iphonesimulator/libv8_base_ios.a
+c0000000051D03B620000000007D281B8
+t1372601186
+s131236280
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/../../xcodebuild/Debug-iphonesimulator/libv8_nosnapshot_ios.a
+c0000000051D03899000000000010B510
+t1372600473
+s1094928
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/AppDelegate.h
+c0000000051D018960000000000000113
+t1372592278
+s275
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/AppDelegate.m
+c0000000051D01896000000000000087E
+t1372592278
+s2174
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/Default-568h@2x.png
+c0000000050748B2300000000000048A2
+t1349815075
+s18594
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/Default.png
+c0000000050748B23000000000000198C
+t1349815075
+s6540
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/Default@2x.png
+c0000000050748B230000000000003EEB
+t1349815075
+s16107
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp
+c0000000051D03CD4000000000000369D
+t1372601556
+s13981
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestiOSV8-Prefix.pch
+c0000000051D018960000000000000141
+t1372592278
+s321
+i<Availability.h>
+i<UIKit/UIKit.h>
+i<Foundation/Foundation.h>
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/en.lproj/InfoPlist.strings
+c0000000051D01896000000000000002D
+t1372592278
+s45
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/main.m
+c0000000051D01896000000000000014E
+t1372592278
+s334
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app
+t1372601372
+s306
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app.dSYM
+t1372601371
+s102
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Default-568h@2x.png
+t1372601372
+s18594
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Default.png
+t1372601372
+s6540
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Default@2x.png
+t1372601372
+s16107
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Info.plist
+t1372592461
+s895
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/PkgInfo
+t1372592461
+s8
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV8
+t1372601371
+s16832
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/en.lproj/InfoPlist.strings
+t1372601372
+s42
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/v8.xcodeproj
+t2
+s0
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/AppDelegate.o
+t1372592462
+s88012
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestV8.o
+t2
+s0
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestiOSV8.LinkFileList
+c0000000051D03C7E00000000000001D4
+t1372601470
+s468
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/main.o
+t1372592462
+s3384
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/tools/gyp/../../xcodebuild/Debug-iphoneos/libv8_base_ios.a
+c00000000000000000000000000000000
+t2
+s0
+
+N/Users/thaiduong/development/v8_study/v8_3.15.6/tools/gyp/../../xcodebuild/Debug-iphoneos/libv8_nosnapshot_ios.a
+c00000000000000000000000000000000
+t2
+s0
+
+N/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk
+c00000000504916AD0000000000000110
+t1346967213
+s272
+
+N/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics
+c0000000050901F900000000000228FD0
+t1351622544
+s2265040
+
+N/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk/System/Library/Frameworks/Foundation.framework/Foundation
+c0000000050901F9D00000000003DCEF0
+t1351622557
+s4050672
+
+N/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk/System/Library/Frameworks/Foundation.framework/Headers/Foundation.h
+c0000000050901F9D00000000000015F7
+t1351622557
+s5623
+
+N/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk/System/Library/Frameworks/UIKit.framework/Headers/UIKit.h
+c0000000050901FCA0000000000000E8D
+t1351622602
+s3725
+
+N/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk/System/Library/Frameworks/UIKit.framework/UIKit
+c0000000050901FCF0000000000AB3D60
+t1351622607
+s11222368
+
+N/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk/usr/include/Availability.h
+c00000000509020630000000000001B54
+t1351622755
+s6996
+
+N/var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch.pth
+t1372592462
+s4853000
+
+N/var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-dkoqpjqwxipjazdffmznpcidkngo/TestiOSV8-Prefix.pch.pth
+t1372601470
+s129012
+
+NTestiOSV8/TestiOSV8-Info.plist
+c0000000051D0189600000000000005AC
+t1372592278
+s1452
+
+CBuild AST from /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/AppDelegate.m
+r0
+
+CBuild AST from /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp
+r0
+
+CBuild AST from /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/main.m
+r0
+
+CCheck dependencies
+r0
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection18"Check dependenciesee22e4b27480b741^de38edb27480b741^---0#1#0#--18"Check dependencies36"DA947E27-AABD-4C7F-A68A-7C9157D8E902-
+
+CCompileC build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/AppDelegate.o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/AppDelegate.m normal i386 objective-c com.apple.compilers.llvm.clang.1_0.compiler
+s394285262.525366
+e394285262.714932
+r1
+xCompileC
+xbuild/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/AppDelegate.o
+x/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/AppDelegate.m
+xnormal
+xi386
+xobjective-c
+xcom.apple.compilers.llvm.clang.1_0.compiler
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection97"Compile /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/AppDelegate.m82ad86ce5080b741^a016b7ce5080b741^---0#0#0#-19%DVTDocumentLocation2@105"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/AppDelegate.m0000000000000000^3991"CompileC build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/AppDelegate.o TestiOSV8/AppDelegate.m normal i386 objective-c com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv LANG en_US.US-ASCII    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    /Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x objective-c -arch i386 -fmessage-length=0 -std=gnu99 -fobjc-arc -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wreturn-type -Wno-implicit-atomic-properties -Wno-receiver-is-weak -Wduplicate-method-match -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-shorten-64-to-32 -Wpointer-sign -Wno-newline-eof -Wno-selector -Wno-strict-selector-match -Wno-undeclared-selector -Wno-deprecated-implementations -DDEBUG=1 -isysroot /Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk -fexceptions -fasm-blocks -Wprotocol -Wdeprecated-declarations -g -Wno-sign-conversion -fobjc-abi-version=2 -fobjc-legacy-dispatch "-DIBOutlet=__attribute__((iboutlet))" "-DIBOutletCollection(ClassName)=__attribute__((iboutletcollection(ClassName)))" "-DIBAction=void)__attribute__((ibaction)" -mios-simulator-version-min=6.0 -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-generated-files.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-own-target-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-all-target-headers.hmap -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-project-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources/i386 -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources -F/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator -include /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch -MMD -MT dependencies -MF /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/AppDelegate.d --serialize-diagnostics /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/AppDelegate.dia -c /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/AppDelegate.m -o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/AppDelegate.o36"96AA977E-AC14-4B04-8297-0D9750C1EDDA-
+
+CCompileC build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestV8.o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp normal i386 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s394294450.949239
+e394294450.986575
+r0
+xCompileC
+xbuild/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestV8.o
+x/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp
+xnormal
+xi386
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+o/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp:28:10: fatal error: 'v8.h' file not found
+o#include <v8.h>
+o         ^
+o1 error generated.
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection94"Compile /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp5324f3b27480b741^828cfcb27480b741^-175"/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp:28:10: fatal error: 'v8.h' file not found#include <v8.h>         ^1 error generated.1(36%IDEClangDiagnosticActivityLogMessage2@21"'v8.h' file not found-394294450#18446744073709551615#0#-2#27"com.apple.dt.IDE.diagnostic23%DVTTextDocumentLocation3@102"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp0000000000000000^27#9#27#9#1634#0#29"Lexical or Preprocessor Issue--0#0#0#-19%DVTDocumentLocation4@102"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp0000000000000000^3687"CompileC build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestV8.o TestiOSV8/TestV8.cpp normal i386 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv LANG en_US.US-ASCII    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    /Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++ -arch i386 -fmessage-length=0 -std=gnu++11 -stdlib=libc++ -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wreturn-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DDEBUG=1 -isysroot /Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk -fexceptions -fasm-blocks -Wdeprecated-declarations -Winvalid-offsetof -g -fvisibility-inlines-hidden -Wno-sign-conversion -mios-simulator-version-min=6.0 -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-generated-files.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-own-target-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-all-target-headers.hmap -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-project-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources/i386 -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources -F/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator -include /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-dkoqpjqwxipjazdffmznpcidkngo/TestiOSV8-Prefix.pch -MMD -MT dependencies -MF /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestV8.d --serialize-diagnostics /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestV8.dia -c /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestV8.cpp -o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestV8.o36"254806F5-6F20-43CC-BD6B-5004BA74E929-
+
+CCompileC build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/main.o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/main.m normal i386 objective-c com.apple.compilers.llvm.clang.1_0.compiler
+s394285262.524784
+e394285262.684835
+r1
+xCompileC
+xbuild/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/main.o
+x/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/main.m
+xnormal
+xi386
+xobjective-c
+xcom.apple.compilers.llvm.clang.1_0.compiler
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection90"Compile /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/main.m3a9386ce5080b741^417dafce5080b741^---0#0#0#-19%DVTDocumentLocation2@98"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/main.m0000000000000000^3949"CompileC build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/main.o TestiOSV8/main.m normal i386 objective-c com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv LANG en_US.US-ASCII    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    /Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x objective-c -arch i386 -fmessage-length=0 -std=gnu99 -fobjc-arc -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wreturn-type -Wno-implicit-atomic-properties -Wno-receiver-is-weak -Wduplicate-method-match -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-shorten-64-to-32 -Wpointer-sign -Wno-newline-eof -Wno-selector -Wno-strict-selector-match -Wno-undeclared-selector -Wno-deprecated-implementations -DDEBUG=1 -isysroot /Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk -fexceptions -fasm-blocks -Wprotocol -Wdeprecated-declarations -g -Wno-sign-conversion -fobjc-abi-version=2 -fobjc-legacy-dispatch "-DIBOutlet=__attribute__((iboutlet))" "-DIBOutletCollection(ClassName)=__attribute__((iboutletcollection(ClassName)))" "-DIBAction=void)__attribute__((ibaction)" -mios-simulator-version-min=6.0 -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-generated-files.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-own-target-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-all-target-headers.hmap -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-project-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources/i386 -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources -F/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator -include /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch -MMD -MT dependencies -MF /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/main.d --serialize-diagnostics /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/main.dia -c /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/main.m -o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/main.o36"CEBE39E3-7899-4B6A-9880-B2F9058A5DE2-
+
+CCopyStringsFile /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/en.lproj/InfoPlist.strings TestiOSV8/en.lproj/InfoPlist.strings
+s394294172.006718
+e394294172.010409
+r1
+xCopyStringsFile
+x/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/en.lproj/InfoPlist.strings
+xTestiOSV8/en.lproj/InfoPlist.strings
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection41"Copy TestiOSV8/en.lproj/InfoPlist.strings81d1019c7380b741^75b0029c7380b741^---0#0#0#-19%DVTDocumentLocation2@118"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/en.lproj/InfoPlist.strings0000000000000000^655"CopyStringsFile build/Debug-iphonesimulator/TestiOSV8.app/en.lproj/InfoPlist.strings TestiOSV8/en.lproj/InfoPlist.strings    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    builtin-copyStrings --validate --inputencoding utf-8 --outputencoding binary --outdir /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/en.lproj -- TestiOSV8/en.lproj/InfoPlist.strings36"B63444A9-A77D-4E11-8258-FD8451705068-
+
+CCpResource ../../tools/gyp/v8.xcodeproj build/Debug-iphonesimulator/TestiOSV8.app/v8.xcodeproj
+r0
+
+CCpResource TestiOSV8/Default-568h@2x.png build/Debug-iphonesimulator/TestiOSV8.app/Default-568h@2x.png
+s394294172.012115
+e394294172.016741
+r1
+xCpResource
+xTestiOSV8/Default-568h@2x.png
+xbuild/Debug-iphonesimulator/TestiOSV8.app/Default-568h@2x.png
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection66"Copy build/Debug-iphonesimulator/TestiOSV8.app/Default-568h@2x.png9129039c7380b741^6f47049c7380b741^---0#0#0#-19%DVTDocumentLocation2@143"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Default-568h@2x.png000000000080d041^711"CpResource "TestiOSV8/Default-568h@2x.png" "build/Debug-iphonesimulator/TestiOSV8.app/Default-568h@2x.png"    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks "/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/Default-568h@2x.png" /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app36"D648CBEF-375A-4001-85C8-E5BD3AED2FB8-
+
+CCpResource TestiOSV8/Default.png build/Debug-iphonesimulator/TestiOSV8.app/Default.png
+s394294172.007277
+e394294172.010404
+r1
+xCpResource
+xTestiOSV8/Default.png
+xbuild/Debug-iphonesimulator/TestiOSV8.app/Default.png
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection58"Copy build/Debug-iphonesimulator/TestiOSV8.app/Default.pngf2ed019c7380b741^a8ac029c7380b741^---0#0#0#-19%DVTDocumentLocation2@135"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Default.png000000000080d041^681"CpResource TestiOSV8/Default.png build/Debug-iphonesimulator/TestiOSV8.app/Default.png    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/Default.png /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app36"1EA8D213-A57A-4A81-8718-2193A121D898-
+
+CCpResource TestiOSV8/Default@2x.png build/Debug-iphonesimulator/TestiOSV8.app/Default@2x.png
+s394294172.011617
+e394294172.016608
+r1
+xCpResource
+xTestiOSV8/Default@2x.png
+xbuild/Debug-iphonesimulator/TestiOSV8.app/Default@2x.png
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection61"Copy build/Debug-iphonesimulator/TestiOSV8.app/Default@2x.png6f0e039c7380b741^5342049c7380b741^---0#0#0#-19%DVTDocumentLocation2@138"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Default@2x.png000000000080d041^696"CpResource "TestiOSV8/Default@2x.png" "build/Debug-iphonesimulator/TestiOSV8.app/Default@2x.png"    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks "/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/Default@2x.png" /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app36"5363393A-ADB3-4C2B-990D-E699431595E4-
+
+CGenerateDSYMFile /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app.dSYM /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV8
+s394294171.704687
+e394294171.998650
+r1
+xGenerateDSYMFile
+x/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app.dSYM
+x/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV8
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection123"Generating /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app.dSYM3d7db49b7380b741^8869ff9b7380b741^---0#0#0#-19%DVTDocumentLocation2@128"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app.dSYM000000000080d041^745"GenerateDSYMFile build/Debug-iphonesimulator/TestiOSV8.app.dSYM build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV8    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    /Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/dsymutil /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV8 -o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app.dSYM36"16E3D156-B6A3-408D-ADB0-969AB81D69BE-
+
+CLd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV8 normal i386
+s394294168.928028
+e394294171.697496
+r1
+xLd
+x/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV8
+xnormal
+xi386
+old: warning: directory not found for option '-L/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/../../xcodebuild/Debug-iphoneos'
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection122"Link /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV8cdb0ed987380b741^c7a1b29b7380b741^-146"ld: warning: directory not found for option '-L/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/../../xcodebuild/Debug-iphoneos'1(21%IDEActivityLogMessage2@132"Directory not found for option '-L/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/../../xcodebuild/Debug-iphoneos'-394294169#0#146#-1#-23%DVTTextDocumentLocation3@-0000000000000000^18446744073709551615#18446744073709551615#18446744073709551615#18446744073709551615#18446744073709551615#0#27"Apple Mach-O Linker Warning--0#0#0#--1573"Ld build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV8 normal i386    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv IPHONEOS_DEPLOYMENT_TARGET 6.0    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    /Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -arch i386 -isysroot /Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk -L/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator -L/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/../../xcodebuild/Debug-iphoneos -L/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/../../xcodebuild/Debug-iphonesimulator -F/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator -filelist /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/Objects-normal/i386/TestiOSV8.LinkFileList -Xlinker -objc_abi_version -Xlinker 2 -fobjc-arc -fobjc-link-runtime -Xlinker -no_implicit_dylibs -mios-simulator-version-min=6.0 -lv8_base_ios -lv8_nosnapshot_ios -framework UIKit -framework Foundation -framework CoreGraphics -o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/TestiOSV836"7CCD5508-FBCE-48CD-9145-BB411E171044-
+
+CProcessInfoPlistFile /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Info.plist TestiOSV8/TestiOSV8-Info.plist
+s394285261.583417
+e394285261.609401
+r1
+xProcessInfoPlistFile
+x/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Info.plist
+xTestiOSV8/TestiOSV8-Info.plist
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection38"Process TestiOSV8/TestiOSV8-Info.plistcea895cd5080b741^93019ccd5080b741^---0#0#0#-19%DVTDocumentLocation2@112"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestiOSV8-Info.plist0000000000000000^763"ProcessInfoPlistFile build/Debug-iphonesimulator/TestiOSV8.app/Info.plist TestiOSV8/TestiOSV8-Info.plist    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    builtin-infoPlistUtility TestiOSV8/TestiOSV8-Info.plist -genpkginfo /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -o /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app/Info.plist36"7ECC573D-726B-4DE7-BF63-67210C58C4CE-
+
+CProcessPCH /Users/thaiduong/Library/Developer/Xcode/DerivedData/all-dotykxnjpwqoauevjjlmsqwofcjq/Index/PrecompiledHeaders/TestiOSV8-Prefix-dntfnbwwmktwvrdknmxzwowaqrus_ast/TestiOSV8-Prefix.pch.pth TestiOSV8/TestiOSV8-Prefix.pch normal i386 objective-c com.apple.compilers.llvm.clang.1_0.astbuilder
+r0
+
+CProcessPCH /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch.pth TestiOSV8/TestiOSV8-Prefix.pch normal i386 objective-c com.apple.compilers.llvm.clang.1_0.compiler
+s394285261.617891
+e394285262.517757
+r1
+xProcessPCH
+x/var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch.pth
+xTestiOSV8/TestiOSV8-Prefix.pch
+xnormal
+xi386
+xobjective-c
+xcom.apple.compilers.llvm.clang.1_0.compiler
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection41"Precompile TestiOSV8/TestiOSV8-Prefix.pchda579ecd5080b741^658b84ce5080b741^---0#0#0#-19%DVTDocumentLocation2@112"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestiOSV8-Prefix.pch0000000000000000^3926"ProcessPCH /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch.pth TestiOSV8/TestiOSV8-Prefix.pch normal i386 objective-c com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv LANG en_US.US-ASCII    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    /Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x objective-c-header -arch i386 -fmessage-length=0 -std=gnu99 -fobjc-arc -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wreturn-type -Wno-implicit-atomic-properties -Wno-receiver-is-weak -Wduplicate-method-match -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-shorten-64-to-32 -Wpointer-sign -Wno-newline-eof -Wno-selector -Wno-strict-selector-match -Wno-undeclared-selector -Wno-deprecated-implementations -DDEBUG=1 -isysroot /Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk -fexceptions -fasm-blocks -Wprotocol -Wdeprecated-declarations -g -Wno-sign-conversion -fobjc-abi-version=2 -fobjc-legacy-dispatch "-DIBOutlet=__attribute__((iboutlet))" "-DIBOutletCollection(ClassName)=__attribute__((iboutletcollection(ClassName)))" "-DIBAction=void)__attribute__((ibaction)" -mios-simulator-version-min=6.0 -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-generated-files.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-own-target-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-all-target-headers.hmap -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-project-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources/i386 -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources -F/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator --serialize-diagnostics /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch.dia -c /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestiOSV8-Prefix.pch -o /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch.pth -MMD -MT dependencies -MF /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-bnsgeehlkfbwumflxbvtmetjselv/TestiOSV8-Prefix.pch.d36"32B17F01-E9D9-4506-93DA-57FBF6DD29FA-
+
+CProcessPCH++ /Users/thaiduong/Library/Developer/Xcode/DerivedData/all-dotykxnjpwqoauevjjlmsqwofcjq/Index/PrecompiledHeaders/TestiOSV8-Prefix-djnmlmdppoivzdgzyyiiewrulofw_ast/TestiOSV8-Prefix.pch.pth TestiOSV8/TestiOSV8-Prefix.pch normal i386 c++ com.apple.compilers.llvm.clang.1_0.astbuilder
+r0
+
+CProcessPCH++ /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-dkoqpjqwxipjazdffmznpcidkngo/TestiOSV8-Prefix.pch.pth TestiOSV8/TestiOSV8-Prefix.pch normal i386 c++ com.apple.compilers.llvm.clang.1_0.compiler
+s394294270.796797
+e394294270.879534
+r1
+xProcessPCH++
+x/var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-dkoqpjqwxipjazdffmznpcidkngo/TestiOSV8-Prefix.pch.pth
+xTestiOSV8/TestiOSV8-Prefix.pch
+xnormal
+xi386
+xc++
+xcom.apple.compilers.llvm.clang.1_0.compiler
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection41"Precompile TestiOSV8/TestiOSV8-Prefix.pch861bccfe7380b741^bf28e1fe7380b741^---0#0#0#-19%DVTDocumentLocation2@112"file://localhost/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestiOSV8-Prefix.pch0000000000000000^3650"ProcessPCH++ /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-dkoqpjqwxipjazdffmznpcidkngo/TestiOSV8-Prefix.pch.pth TestiOSV8/TestiOSV8-Prefix.pch normal i386 c++ com.apple.compilers.llvm.clang.1_0.compiler    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv LANG en_US.US-ASCII    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    /Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -x c++-header -arch i386 -fmessage-length=0 -std=gnu++11 -stdlib=libc++ -Wno-trigraphs -fpascal-strings -O0 -Wno-missing-field-initializers -Wno-missing-prototypes -Wreturn-type -Wno-non-virtual-dtor -Wno-overloaded-virtual -Wno-exit-time-destructors -Wformat -Wno-missing-braces -Wparentheses -Wswitch -Wno-unused-function -Wno-unused-label -Wno-unused-parameter -Wunused-variable -Wunused-value -Wempty-body -Wuninitialized -Wno-unknown-pragmas -Wno-shadow -Wno-four-char-constants -Wno-conversion -Wno-shorten-64-to-32 -Wno-newline-eof -Wno-c++11-extensions -DDEBUG=1 -isysroot /Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator6.0.sdk -fexceptions -fasm-blocks -Wdeprecated-declarations -Winvalid-offsetof -g -fvisibility-inlines-hidden -Wno-sign-conversion -mios-simulator-version-min=6.0 -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-generated-files.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-own-target-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-all-target-headers.hmap -iquote /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/TestiOSV8-project-headers.hmap -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/setup/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources/i386 -I/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/TestiOSV8.build/Debug-iphonesimulator/TestiOSV8.build/DerivedSources -F/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator --serialize-diagnostics /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-dkoqpjqwxipjazdffmznpcidkngo/TestiOSV8-Prefix.pch.dia -c /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/TestiOSV8/TestiOSV8-Prefix.pch -o /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-dkoqpjqwxipjazdffmznpcidkngo/TestiOSV8-Prefix.pch.pth -MMD -MT dependencies -MF /var/folders/sd/1gn6fhmx7nnfj84xd4jgwy2h0000gp/C/com.apple.Xcode.502/SharedPrecompiledHeaders/TestiOSV8-Prefix-dkoqpjqwxipjazdffmznpcidkngo/TestiOSV8-Prefix.pch.d36"BA2EB2C0-24DF-4D32-ADAF-A4806909C09D-
+
+CTouch /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app
+s394294172.024837
+e394294172.055581
+r1
+xTouch
+x/Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app
+lSLF05#21%IDEActivityLogSection1@2#32"com.apple.dt.IDE.BuildLogSection113"Touch /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app5d70069c7380b741^0f480e9c7380b741^---0#0#0#--464"Touch build/Debug-iphonesimulator/TestiOSV8.app    cd /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8    setenv PATH "/Users/thaiduong/setup/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Users/thaiduong/setup/Xcode.app/Contents/Developer/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin"    /usr/bin/touch -c /Users/thaiduong/development/v8_study/v8_3.15.6/samples/TestiOSV8/build/Debug-iphonesimulator/TestiOSV8.app36"D13A106A-17DF-4EA7-990B-3CC166576FE9-
+

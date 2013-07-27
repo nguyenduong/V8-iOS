@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="..">
+      <UniqueIdentifier>{739DB09A-CC57-A953-A6CF-F64FA08E4FA7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\..">
+      <UniqueIdentifier>{739DB09A-CC57-A953-A6CF-F64FA08E4FA7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\..\src">
+      <UniqueIdentifier>{8CDEE807-BC53-E450-C8B8-4DEBB66742D4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="..\..\include">
+      <UniqueIdentifier>{57CA55B8-BCC5-4000-CE3A-58972F82E9CB}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="v8.gyp"/>
+    <ClInclude Include="..\..\src\atomicops.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bignum.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\allocation.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\list-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\preparser.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\once.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\globals.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\hashmap.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\preparser.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\dtoa.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\checks.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\conversions.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\list.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\fixed-dtoa.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\utils-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\strtod.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\fast-dtoa.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\unicode.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\allocation.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\atomicops_internals_x86_gcc.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\utils.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\unicode-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\cached-powers.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\preparser-api.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\char-predicates-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\token.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\diy-fp.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\fixed-dtoa.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\unicode.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\strtod.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\scanner.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\preparse-data-format.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\preparse-data.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\char-predicates.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\win32-math.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\cached-powers.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\scanner.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\win32-math.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\diy-fp.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\utils.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\bignum.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\conversions.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\once.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\fast-dtoa.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\conversions-inl.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\double.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\bignum-dtoa.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\preparse-data.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\dtoa.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\src\token.h">
+      <Filter>..\..\src</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\bignum-dtoa.cc">
+      <Filter>..\..\src</Filter>
+    </ClCompile>
+    <ClInclude Include="..\..\include\v8-preparser.h">
+      <Filter>..\..\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\v8stdint.h">
+      <Filter>..\..\include</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
